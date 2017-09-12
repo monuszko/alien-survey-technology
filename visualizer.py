@@ -1,7 +1,18 @@
 #!/usr/bin/env python3
 
-import os, re
+import os, sys, re
 from collections import OrderedDict, Counter
+from yattag import Doc, indent
+
+
+PRODUCERS = {}
+with open(sys.argv[1], 'r') as card_file:
+    for line in card_file:
+        if line.startswith('N:'):
+            card_name = ' '.join(line.split(':')[1:]).strip()
+        elif line.startswith('G:'):
+            PRODUCERS[card_name] = line.split(':')[1].lower().strip()
+
 
 VARIANTS = {
         'Explore +1,+1': 'Explore',
@@ -10,15 +21,22 @@ VARIANTS = {
         'Consume-x2': 'Consume',
         }
 
+
+def get_color(player):
+    colors = ('red', 'green', 'yellow', 'cyan')
+    color = player.lower() if player.lower() in colors else 'indigo'
+    return color
+
+
 logs = [f for f in os.listdir('/tmp') if f.startswith('export_')]
 
 log = max(logs)
-print(log)
+print('Processing {}...'.format(log))
 
 messages = []
 
-with open('/tmp/' + log, 'r') as f:
-    for line in f:
+with open('/tmp/' + log, 'r') as log_file:
+    for line in log_file:
         message = re.search(r'.*<Message[^>]*>([^<]*)</Message>\n', line)
         if message:
             messages.append(message.group(1))
@@ -74,42 +92,94 @@ for msg in messages:
             phase['bonuses'] = bonuses[phase_name]
             continue
 
+        # I - Explore:
+        player = counter = None
+        first = msg.split()[0]
+        if first in players:
+            player, counter = first, phase['players'][first]['numbers']
+
+        if 'keeps' in msg:
+            pattern = r'\w+ draws (\d+) and keeps (\d+).'
+            explored, kept = re.search(pattern, msg).groups()
+            counter['explored'] += int(explored)
+            counter['kept'] += int(kept)
+
+        # II, III - Develop, Settle:
         if 'places' in msg:
             player, placed = re.search(r'([^ ]+) places ([^.]+).', msg).groups()
             phase['players'][player]['placed'].append(placed)
 
-        
+        # IV - Consume:
+        if 'for Consume phase' in msg:
+            cards = points = 0
+            if 'card' in msg and 'VP' in msg:
+                pattern = r'([^ ]+) receives (\d+) cards? and (\d+) VPs?'
+                player, cards, points = re.search(pattern, msg).groups()
+            elif 'VP' in msg:
+                pattern = r'([^ ]+) receives (\d+) VPs? for Consume phase.'
+                player, points = re.search(pattern, msg).groups()
+            else:
+                pattern = r'([^ ]+) receives (\d+) cards? for Consume phase.'
+                player, cards = re.search(pattern, msg).groups()
+            counter['cards'] += int(cards)
+            counter['points'] += int(points) 
+
+        # V - Produce
+        if 'produces on' in msg:
+            planet = re.search(r'\w+ produces on (.+).', msg).group(1)
+            counter[PRODUCERS[planet]] += 1
 
 
+doc, tag, text, line= Doc().ttl()
 
-print('<h1> Players: </h1>')
-print('<dl>')
-for player, homeworld in players.items():
-    print('<dt>{0}:</dt> <dd>{1}</dd>'.format(player, homeworld))
-print('</dl>')
 
-print()
-print('<table>')
-for round_number, rnd in enumerate(rounds, 1):
-    for phase in rnd:
-        if phase['name'] == rnd[0]['name']:
-            print('<tr><td rowspan="%s">%s</td><td>%s ' % (len(rnd), round_number, phase['name']), end="")
-        else:
-            print('<tr><td>%s ' % phase['name'], end="")
+def render_actions(phase):
+    for player, variant in phase['bonuses']:
+        action = variant if variant in VARIANTS else phase['name']
+        line('li', action, klass=get_color(player))
 
-        for player, variant in phase['bonuses']:
-            print('%s: %s' % (player, variant), end='')
-        print('</td>', end='')
 
-        for player in players:
-            pl = phase['players'][player]
-            print('<td>', end="")
-            line = ''
-            line += ', '.join(pl['placed'])
-            print(line, end='')
-            print('</td>', end='')
-        print('</tr>')
+def render_gains(phase):
+    content = ''
+    pl = phase['players'][player]
+    counter = pl['numbers']
 
-print('</table>')
+    explored = ''
+    if  counter['explored']:
+        explored = '+%s(%s)' % (counter['kept'], counter['explored'])
 
+    placed = ', '.join(pl['placed'])
+
+    cards = counter['cards']
+    cards = '' if not cards else '+%scards' % cards
+    points = counter['points']
+    points = '' if not points else '+%spoints' % points 
+
+    content += ' '.join([explored, placed, cards, points])
+    text(content)
+
+    for kind in ('novelty', 'rare', 'gene', 'alien'):
+        with tag('span', klass=kind):
+            text('#' * counter[kind])
+
+
+with tag('html'):
+    with tag('meta'):
+        doc.stag('link', rel="stylesheet", href="style.css")
+    with tag('body'):
+        for round_number, rnd in enumerate(rounds, 1):
+            line('h2', 'Round %s' % round_number)
+            with tag('table'):
+                for phase in rnd:
+                    with tag('tr'):
+                        with tag('td', klass='action'):
+                            render_actions(phase)
+                        for player in players:
+                            with tag('td'):
+                                render_gains(phase)
+
+
+output = open('report.html', 'w')
+print("Generating 'report.html'...")
+print(indent(doc.getvalue()), file=output)
 

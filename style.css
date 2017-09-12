@@ -1,0 +1,58 @@
+
+table {
+    border: 1px solid purple;
+    border-color: gray;
+    width: 80%;
+}
+
+td {
+    border: 1px solid purple;
+    border-color: gray;
+}
+
+td.action {
+    width: 15%;
+}
+
+.red {
+    background-color: #aa8888;
+}
+
+.green {
+    background-color: #88aa88;
+}
+
+.yellow {
+    background-color: #aaaa88;
+}
+
+.cyan {
+    background-color: #88aaaa;
+}
+
+.purple {
+    background-color: #aa88aa;
+}
+
+.indigo {
+    background-color: #8888aa;
+    font-weight: bold;
+}
+
+
+.alien {
+    background-color: #fef200;
+}
+
+
+.rare {
+    background-color: #dba567;
+}
+
+.gene {
+    background-color: #80cd2b;
+}
+
+.novelty {
+    background-color: #80d6f7;
+}
