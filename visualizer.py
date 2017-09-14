@@ -1,18 +1,25 @@
 #!/usr/bin/env python3
 
-import os, sys, re
+import os, re
 from collections import OrderedDict, Counter
 from yattag import Doc, indent
 
 
 PRODUCERS = {}
-with open(sys.argv[1], 'r') as card_file:
+with open('cards.txt', 'r') as card_file:
     for line in card_file:
         if line.startswith('N:'):
             card_name = ' '.join(line.split(':')[1:]).strip()
         elif line.startswith('G:'):
             PRODUCERS[card_name] = line.split(':')[1].lower().strip()
 
+PHASES = (
+        'Explore',
+        'Develop',
+        'Settle',
+        'Consume',
+        'Produce'
+        )
 
 VARIANTS = {
         'Explore +1,+1': 'Explore',
@@ -24,7 +31,7 @@ VARIANTS = {
 
 def get_color(player):
     colors = ('red', 'green', 'yellow', 'cyan')
-    color = player.lower() if player.lower() in colors else 'indigo'
+    color = player.lower() if player.lower() in colors else 'blue'
     return color
 
 
@@ -40,6 +47,18 @@ with open('/tmp/' + log, 'r') as log_file:
         message = re.search(r'.*<Message[^>]*>([^<]*)</Message>\n', line)
         if message:
             messages.append(message.group(1))
+
+
+def get_phase_template():
+    phase = {'players': {}}
+    for player in players.keys():
+        phase['players'][player] = {}
+        phase['players'][player]['placed'] = []
+        phase['players'][player]['numbers'] = Counter()
+        phase_name = context
+        phase['name'] = phase_name
+        phase['bonuses'] = bonuses[phase_name]
+    return phase
 
 
 context = None
@@ -58,26 +77,23 @@ for msg in messages:
                 rounds.append(rnd)
             rnd = []
             bonuses = {}
-            phase = {}
         elif 'phase ---' in msg:
-            context = 'phase'
+            context = re.search(r'--- (\w+) phase ---', msg).group(1)
             if phase:
                 rnd.append(phase)
+            phase = get_phase_template()
+        continue
 
-            phase = {'players': {}}
-            for player in players.keys():
-                phase['players'][player] = {}
-                phase['players'][player]['placed'] = []
-                phase['players'][player]['numbers'] = Counter()
-
+    # Collect initial game information:
     if context == 'start':
         if ' starts with ' in msg:
-            player, homeworld = re.search(r'(.*) starts with (.*)\.', msg).groups()
+            player, homeworld = re.search(r'(.+) starts with (.*)\.', msg).groups()
             players[player] = homeworld
 
+    # Collect round start information:
     if context and context.isdigit():
         if ' chooses ' in msg:
-            player, action = re.search(r'(.*) chooses (.*)\.', msg).groups()
+            player, action = re.search(r'(.+) chooses (.+)\.', msg).groups()
             phase_name = action if action not in VARIANTS else VARIANTS[action]
             variant = "" if action not in VARIANTS else action 
 
@@ -85,48 +101,48 @@ for msg in messages:
                 bonuses[phase_name] = [(player, variant)]
             else:
                 bonuses[phase_name].append((player, variant))
-    if context and 'phase' in context:
-        if 'phase ---' in msg:
-            phase_name = re.search(r'--- ([A-Z][a-z]+) phase ---', msg).group(1)
-            phase['name'] = phase_name
-            phase['bonuses'] = bonuses[phase_name]
-            continue
 
-        # I - Explore:
+    # Collect info about phase:
+    if context in PHASES:
         player = counter = None
         first = msg.split()[0]
         if first in players:
             player, counter = first, phase['players'][first]['numbers']
 
+        # exploration:
         if 'keeps' in msg:
-            pattern = r'\w+ draws (\d+) and keeps (\d+).'
+            pattern = r'.+ draws (\d+) and keeps (\d+).'
             explored, kept = re.search(pattern, msg).groups()
             counter['explored'] += int(explored)
             counter['kept'] += int(kept)
 
-        # II, III - Develop, Settle:
+        # placement of cards:
         if 'places' in msg:
-            player, placed = re.search(r'([^ ]+) places ([^.]+).', msg).groups()
+            player, placed = re.search(r'(.+) places ([^.]+).', msg).groups()
             phase['players'][player]['placed'].append(placed)
 
-        # IV - Consume:
+        # cards and VPs gained:
+        cards = points = 0
+        pattern = r'(.+) receives (\d+) cards? for \w phase.'
+
         if 'for Consume phase' in msg:
-            cards = points = 0
             if 'card' in msg and 'VP' in msg:
-                pattern = r'([^ ]+) receives (\d+) cards? and (\d+) VPs?'
+                pattern = r'(.+) receives (\d+) cards? and (\d+) VPs?'
                 player, cards, points = re.search(pattern, msg).groups()
             elif 'VP' in msg:
-                pattern = r'([^ ]+) receives (\d+) VPs? for Consume phase.'
+                pattern = r'(.+) receives (\d+) VPs? for Consume phase.'
                 player, points = re.search(pattern, msg).groups()
             else:
-                pattern = r'([^ ]+) receives (\d+) cards? for Consume phase.'
+                pattern = r'(.+) receives (\d+) cards? for Consume phase.'
                 player, cards = re.search(pattern, msg).groups()
             counter['cards'] += int(cards)
             counter['points'] += int(points) 
+        elif 'for Produce phase' in msg:
+            pattern = r'(.+) receives (\d+) cards? for Produce phase.'
 
-        # V - Produce
+        # production of goods:
         if 'produces on' in msg:
-            planet = re.search(r'\w+ produces on (.+).', msg).group(1)
+            planet = re.search(r'.+ produces on (.+)\.', msg).group(1)
             counter[PRODUCERS[planet]] += 1
 
 
