@@ -36,12 +36,11 @@ def get_color(player):
 
 
 logs = [f for f in os.listdir('/tmp') if f.startswith('export_')]
-
 log = max(logs)
-print('Processing {}...'.format(log))
+print('Processing {} ...'.format(log))
+
 
 messages = []
-
 with open('/tmp/' + log, 'r') as log_file:
     for line in log_file:
         message = re.search(r'.*<Message[^>]*>([^<]*)</Message>\n', line)
@@ -49,116 +48,99 @@ with open('/tmp/' + log, 'r') as log_file:
             messages.append(message.group(1))
 
 
-def get_phase_template():
-    phase = {'players': {}}
-    for player in players.keys():
-        phase['players'][player] = {}
-        phase['players'][player]['placed'] = []
-        phase['players'][player]['numbers'] = Counter()
-        phase_name = context
-        phase['name'] = phase_name
-        phase['bonuses'] = bonuses[phase_name]
+def updated_phase(msg, phase):
+    player = counter = None
+    # Not checking 'split()[0] in line' because name might be
+    # multi-word.
+    for pl in phase['players']:
+        if msg.startswith(pl['name']):
+            player = pl
+            counter = player['numbers']
+            break
+    if not pl:
+        return phase
+
+    # exploration:
+    if 'keeps' in msg:
+        pattern = r'.+ draws (\d+) and keeps (\d+).'
+        explored, kept = re.search(pattern, msg).groups()
+        counter['explored'] += int(explored)
+        counter['kept'] += int(kept)
+
+    # placement of cards:
+    if 'places' in msg:
+        placed = re.search(r'.+ places ([^.]+).', msg).group(1)
+        player['placed'].append(placed)
+
+    # cards and VPs gained:
+    if 'receives' in msg:
+        cards = points = 0
+        if 'Explore' in msg:
+            return phase
+        # Sentient Robots, Scientific Cruisers are handled in
+        # Produce and Consume summary lines.
+        if 'from' in msg and phase['name'] not in ('Settle', 'Develop'):
+            return phase
+        elif phase['name'] in ('Develop', 'Settle'):
+            cards = re.search(r'receives (\d+) cards? from', msg).group(1)
+        elif 'VP' not in msg:
+            pattern = r'receives (\d+) cards? for (Produce|Consume) phase'
+            cards = re.search(pattern, msg).group(1)
+        elif 'card' not in msg:
+            pattern = r'.+ receives (\d+) VPs? for Consume phase.'
+            points = re.search(pattern, msg).group(1)
+        elif 'card' in msg and 'VP' in msg:
+            pattern = r'.+ receives (\d+) cards? and (\d+) VPs?'
+            cards, points = re.search(pattern, msg).groups()
+        counter['cards'] += int(cards)
+        counter['points'] += int(points)
+
+    # production of goods:
+    if 'produces on' in msg:
+        planet = re.search(r'.+ produces on (.+)\.', msg).group(1)
+        counter[PRODUCERS[planet]] += 1
     return phase
 
 
-context = None
-rounds = []
-rnd = []
-phase = {}
-players = OrderedDict()
-for msg in messages:
-    if '===' in msg or '---' in msg:
-        if 'Start of game' in msg:
-            context = 'start'
-        elif 'Round' in msg:
-            context = re.search(r'=== Round (\d+) begins ===', msg).group(1)
-            if phase:
-                rnd.append(phase)
-                rounds.append(rnd)
-            rnd = []
-            bonuses = {}
-        elif 'phase ---' in msg:
-            context = re.search(r'--- (\w+) phase ---', msg).group(1)
-            if phase:
-                rnd.append(phase)
-            phase = get_phase_template()
-        continue
-
-    # Collect initial game information:
-    if context == 'start':
-        if ' starts with ' in msg:
-            player, homeworld = re.search(r'(.+) starts with (.*)\.', msg).groups()
-            players[player] = homeworld
-
-    # Collect round start information:
-    if context and context.isdigit():
-        if ' chooses ' in msg:
-            player, action = re.search(r'(.+) chooses (.+)\.', msg).groups()
-            phase_name = action if action not in VARIANTS else VARIANTS[action]
-            variant = "" if action not in VARIANTS else action 
-
-            if phase_name not in bonuses:
-                bonuses[phase_name] = [(player, variant)]
-            else:
-                bonuses[phase_name].append((player, variant))
-
-    # Collect info about phase:
-    if context in PHASES:
-        player = counter = None
-        first = msg.split()[0]
-        if first in players:
-            player, counter = first, phase['players'][first]['numbers']
-
-        # exploration:
-        if 'keeps' in msg:
-            pattern = r'.+ draws (\d+) and keeps (\d+).'
-            explored, kept = re.search(pattern, msg).groups()
-            counter['explored'] += int(explored)
-            counter['kept'] += int(kept)
-
-        # placement of cards:
-        if 'places' in msg:
-            player, placed = re.search(r'(.+) places ([^.]+).', msg).groups()
-            phase['players'][player]['placed'].append(placed)
-
-        # cards and VPs gained:
-        cards = points = 0
-        pattern = r'(.+) receives (\d+) cards? for \w phase.'
-
-        if 'for Consume phase' in msg:
-            if 'card' in msg and 'VP' in msg:
-                pattern = r'(.+) receives (\d+) cards? and (\d+) VPs?'
-                player, cards, points = re.search(pattern, msg).groups()
-            elif 'VP' in msg:
-                pattern = r'(.+) receives (\d+) VPs? for Consume phase.'
-                player, points = re.search(pattern, msg).groups()
-            else:
-                pattern = r'(.+) receives (\d+) cards? for Consume phase.'
-                player, cards = re.search(pattern, msg).groups()
-            counter['cards'] += int(cards)
-            counter['points'] += int(points) 
-        elif 'for Produce phase' in msg:
-            pattern = r'(.+) receives (\d+) cards? for Produce phase.'
-
-        # production of goods:
-        if 'produces on' in msg:
-            planet = re.search(r'.+ produces on (.+)\.', msg).group(1)
-            counter[PRODUCERS[planet]] += 1
+def get_phase_name(choice):
+    return choice if choice not in VARIANTS else VARIANTS[choice]
 
 
-doc, tag, text, line= Doc().ttl()
+def updated_choices(choices, msg):
+    if ' chooses ' in msg:
+        player_name, choice = re.search(r'(.+) chooses (.+)\.', msg).groups()
+        phase_name = get_phase_name(choice)
+        choices[player_name] = choice
+    return choices
+
+
+def get_fresh_phase(msg, choices, players):
+    phase_name = re.search(r'--- (\w+) phase ---', msg).group(1)
+    phase = {'name': phase_name, 'bonuses': [], 'players': []}
+    for player_name in players:
+        player = {
+                'name': player_name,
+                'placed': [],
+                'numbers': Counter()
+                }
+        phase['players'].append(player)
+    for player_name, choice in choices.items():
+        if get_phase_name(choice) == phase['name']:
+            phase['bonuses'].append((player_name, choice))
+    return phase
 
 
 def render_actions(phase):
-    for player, variant in phase['bonuses']:
-        action = variant if variant in VARIANTS else phase['name']
-        line('li', action, klass=get_color(player))
+    # TODO: Order changes between runs. Do something
+    # about the OrderedDict
+    for player, choice in phase['bonuses']:
+        line('li', choice, klass=get_color(player))
 
 
-def render_gains(phase):
+def render_gains(player):
     content = ''
-    pl = phase['players'][player]
-    counter = pl['numbers']
+    pl = player
+    counter = player['numbers']
 
     explored = ''
     if  counter['explored']:
@@ -174,11 +156,42 @@ def render_gains(phase):
     content += ' '.join([explored, placed, cards, points])
     text(content)
 
+    # TODO: kinds of goods sometimes have gaps between
+    # them for no apparent reason.
     for kind in ('novelty', 'rare', 'gene', 'alien'):
-        with tag('span', klass=kind):
-            text('#' * counter[kind])
+        # Don't add empty spans to DOM tree
+        if counter[kind]:
+            with tag('span', klass=kind):
+                text('#' * counter[kind])
 
 
+rounds = []
+players = OrderedDict()
+msg = messages[0]
+while 'Round' not in msg:
+    if ' starts with ' in msg:
+        player, homeworld = re.search(r'(.+) starts with (.*)\.', msg).groups()
+        players[player] = homeworld
+    msg = messages.pop(0)
+
+
+while 'End of game' not in msg:
+    choices = {}
+    rnd = []
+    while 'phase ---' not in msg:
+        # Between Round and Phase
+        choices = updated_choices(choices, msg)
+        msg = messages.pop(0)
+    while '===' not in msg:
+        if 'phase ---' in msg:
+            rnd.append(get_fresh_phase(msg, choices, players))
+        else:
+            rnd[-1] = updated_phase(msg, rnd[-1])
+        msg = messages.pop(0)
+    rounds.append(rnd)
+
+
+doc, tag, text, line= Doc().ttl()
 with tag('html'):
     with tag('meta'):
         doc.stag('link', rel="stylesheet", href="style.css")
@@ -190,12 +203,12 @@ with tag('html'):
                     with tag('tr'):
                         with tag('td', klass='action'):
                             render_actions(phase)
-                        for player in players:
+                        for player in phase['players']:
                             with tag('td'):
-                                render_gains(phase)
+                                render_gains(player)
 
 
 output = open('report.html', 'w')
-print("Generating 'report.html'...")
+print("Generating 'report.html' ...")
 print(indent(doc.getvalue()), file=output)
 
