@@ -42,64 +42,15 @@ print('Processing {} ...'.format(log))
 
 messages = []
 with open('/tmp/' + log, 'r') as log_file:
+    # Note to future self:
+    # (:?)? is an optional non-capturing group
+    # which may contain a normal group.
+    pattern = r'.*<Message(?: format="(\w+)")?>([^<]*)</Message>\n'
     for line in log_file:
-        message = re.search(r'.*<Message[^>]*>([^<]*)</Message>\n', line)
-        if message:
-            messages.append(message.group(1))
-
-
-def updated_phase(msg, phase):
-    player = counter = None
-    # Not checking 'split()[0] in line' because name might be
-    # multi-word.
-    for pl in phase['players']:
-        if msg.startswith(pl['name']):
-            player = pl
-            counter = player['numbers']
-            break
-    if not pl:
-        return phase
-
-    # exploration:
-    if 'keeps' in msg:
-        pattern = r'.+ draws (\d+) and keeps (\d+).'
-        explored, kept = re.search(pattern, msg).groups()
-        counter['explored'] += int(explored)
-        counter['kept'] += int(kept)
-
-    # placement of cards:
-    if 'places' in msg:
-        placed = re.search(r'.+ places ([^.]+).', msg).group(1)
-        player['placed'].append(placed)
-
-    # cards and VPs gained:
-    if 'receives' in msg:
-        cards = points = 0
-        if 'Explore' in msg:
-            return phase
-        # Sentient Robots, Scientific Cruisers are handled in
-        # Produce and Consume summary lines.
-        if 'from' in msg and phase['name'] not in ('Settle', 'Develop'):
-            return phase
-        elif phase['name'] in ('Develop', 'Settle'):
-            cards = re.search(r'receives (\d+) cards? from', msg).group(1)
-        elif 'VP' not in msg:
-            pattern = r'receives (\d+) cards? for (Produce|Consume) phase'
-            cards = re.search(pattern, msg).group(1)
-        elif 'card' not in msg:
-            pattern = r'.+ receives (\d+) VPs? for Consume phase.'
-            points = re.search(pattern, msg).group(1)
-        elif 'card' in msg and 'VP' in msg:
-            pattern = r'.+ receives (\d+) cards? and (\d+) VPs?'
-            cards, points = re.search(pattern, msg).groups()
-        counter['cards'] += int(cards)
-        counter['points'] += int(points)
-
-    # production of goods:
-    if 'produces on' in msg:
-        planet = re.search(r'.+ produces on (.+)\.', msg).group(1)
-        counter[PRODUCERS[planet]] += 1
-    return phase
+        match = re.search(pattern, line)
+        if match:
+            fmt, message = match.groups()
+            messages.append((message, fmt))
 
 
 def get_phase_name(choice):
@@ -107,6 +58,7 @@ def get_phase_name(choice):
 
 
 def updated_choices(choices, msg):
+    # TODO: 2 Player Advanced needs 2 choices per player.
     if ' chooses ' in msg:
         player_name, choice = re.search(r'(.+) chooses (.+)\.', msg).groups()
         phase_name = get_phase_name(choice)
@@ -114,26 +66,82 @@ def updated_choices(choices, msg):
     return choices
 
 
-def get_fresh_phase(msg, choices, players):
-    phase_name = re.search(r'--- (\w+) phase ---', msg).group(1)
-    phase = {'name': phase_name, 'bonuses': [], 'players': []}
-    for player_name in players:
-        player = {
-                'name': player_name,
-                'placed': [],
-                'numbers': Counter()
-                }
-        phase['players'].append(player)
-    for player_name, choice in choices.items():
-        if get_phase_name(choice) == phase['name']:
-            phase['bonuses'].append((player_name, choice))
-    return phase
+class Phase:
+    ''' Stores information about game state at the start of the phase
+    and about gains players made during the phase. '''
+    def __init__(self, msg, choices, players):
+        self.name = re.search(r'--- (\w+) phase ---', msg).group(1)
+        self.bonuses = []
+        self.players = []
+        for player_name in players:
+            player = {
+                    'name': player_name,
+                    'placed': [],
+                    'numbers': Counter(),
+                    }
+            self.players.append(player)
+        for player_name, choice in choices.items():
+            if get_phase_name(choice) == self.name:
+                self.bonuses.append((player_name, choice))
+
+    def update(self, msg, fmt, phase):
+        ''' Update phase based on log message '''
+        player = counter = None
+        # Not checking 'split()[0] in line' because name might be
+        # multi-word.
+        for pl in self.players:
+            if msg.startswith(pl['name']):
+                player = pl
+                counter = player['numbers']
+                break
+        if not player:
+            return
+
+        # exploration:
+        if 'and keeps' in msg:
+            pattern = r'.+ draws (\d+) and keeps (\d+).'
+            explored, kept = re.search(pattern, msg).groups()
+            counter['explored'] += int(explored)
+            counter['kept'] += int(kept)
+
+        # placement of cards:
+        if 'places' in msg:
+            placed = re.search(r'.+ places ([^.]+).', msg).group(1)
+            player['placed'].append(placed)
+
+        # cards and VPs gained:
+        if 'receives' in msg:
+            cards = points = 0
+            if 'Explore' in msg:
+                return
+            # Sentient Robots, Scientific Cruisers are handled in
+            # Produce and Consume summary lines.
+            if 'from' in msg and self.name not in ('Settle', 'Develop'):
+                return
+            elif self.name in ('Develop', 'Settle'):
+                cards = re.search(r'receives (\d+) cards? from', msg).group(1)
+            elif 'VP' not in msg:
+                pattern = r'receives (\d+) cards? for (Produce|Consume) phase'
+                cards = re.search(pattern, msg).group(1)
+            elif 'card' not in msg:
+                pattern = r'.+ receives (\d+) VPs? for Consume phase.'
+                points = re.search(pattern, msg).group(1)
+            elif 'card' in msg and 'VP' in msg:
+                pattern = r'.+ receives (\d+) cards? and (\d+) VPs?'
+                cards, points = re.search(pattern, msg).groups()
+            counter['cards'] += int(cards)
+            counter['points'] += int(points)
+
+        # production of goods:
+        if 'produces on' in msg:
+            planet = re.search(r'.+ produces on (.+)\.', msg).group(1)
+            counter[PRODUCERS[planet]] += 1
 
 
 def render_actions(phase):
     # TODO: Order changes between runs. Do something
     # about the OrderedDict
-    for player, choice in phase['bonuses']:
+    for player, choice in phase.bonuses:
         line('li', choice, klass=get_color(player))
 
 
@@ -151,7 +159,7 @@ def render_gains(player):
     cards = counter['cards']
     cards = '' if not cards else '+%scards' % cards
     points = counter['points']
-    points = '' if not points else '+%spoints' % points 
+    points = '' if not points else '+%spoints' % points
 
     content += ' '.join([explored, placed, cards, points])
     text(content)
@@ -165,29 +173,29 @@ def render_gains(player):
                 text('#' * counter[kind])
 
 
-rounds = []
 players = OrderedDict()
-msg = messages[0]
+msg, fmt = messages[0]
 while 'Round' not in msg:
     if ' starts with ' in msg:
         player, homeworld = re.search(r'(.+) starts with (.*)\.', msg).groups()
         players[player] = homeworld
-    msg = messages.pop(0)
+    msg, fmt = messages.pop(0)
 
 
+rounds = []
 while 'End of game' not in msg:
     choices = {}
     rnd = []
     while 'phase ---' not in msg:
         # Between Round and Phase
         choices = updated_choices(choices, msg)
-        msg = messages.pop(0)
+        msg, fmt = messages.pop(0)
     while '===' not in msg:
         if 'phase ---' in msg:
-            rnd.append(get_fresh_phase(msg, choices, players))
+            rnd.append(Phase(msg, choices, players))
         else:
-            rnd[-1] = updated_phase(msg, rnd[-1])
-        msg = messages.pop(0)
+            rnd[-1].update(msg, fmt, rnd[-1])
+        msg, fmt = messages.pop(0)
     rounds.append(rnd)
 
 
@@ -203,7 +211,7 @@ with tag('html'):
                     with tag('tr'):
                         with tag('td', klass='action'):
                             render_actions(phase)
-                        for player in phase['players']:
+                        for player in phase.players:
                             with tag('td'):
                                 render_gains(player)
 
