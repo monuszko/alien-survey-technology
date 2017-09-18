@@ -69,15 +69,17 @@ def updated_choices(choices, msg):
 class Phase:
     ''' Stores information about game state at the start of the phase
     and about gains players made during the phase. '''
-    def __init__(self, msg, choices, players):
+    def __init__(self, msg, choices, tableau):
         self.name = re.search(r'--- (\w+) phase ---', msg).group(1)
         self.bonuses = []
         self.players = []
-        for player_name in players:
+        for player_name in tableau:
             player = {
                     'name': player_name,
                     'placed': [],
+                    'lost': [],
                     'numbers': Counter(),
+                    'tableau': tableau[player_name],
                     }
             self.players.append(player)
         for player_name, choice in choices.items():
@@ -145,6 +147,17 @@ def render_actions(phase):
         line('li', choice, klass=get_color(player))
 
 
+def render_header(tableau):
+    line('td', 'Actions')
+    for player in tableau:
+        tab = '#' * len(tableau[player])
+        tab = [tab[n:n+4] for n in range(0, len(tab), 4)]
+        tab = ' '.join(tab)
+        with tag('td', klass=get_color(player)):
+            line('li', player)
+            line('li', tab)
+
+
 def render_gains(player):
     content = ''
     pl = player
@@ -173,13 +186,13 @@ def render_gains(player):
                 text('#' * counter[kind])
 
 
-players = OrderedDict()
-msg, fmt = messages[0]
+tableau = OrderedDict()
+msg = messages[0][0]
 while 'Round' not in msg:
     if ' starts with ' in msg:
         player, homeworld = re.search(r'(.+) starts with (.*)\.', msg).groups()
-        players[player] = homeworld
-    msg, fmt = messages.pop(0)
+        tableau[player] = [homeworld]
+    msg = messages.pop(0)[0]
 
 
 rounds = []
@@ -192,7 +205,12 @@ while 'End of game' not in msg:
         msg, fmt = messages.pop(0)
     while '===' not in msg:
         if 'phase ---' in msg:
-            rnd.append(Phase(msg, choices, players))
+            if rnd:
+                for player in rnd[-1].players:
+                    tableau[player['name']].extend(player['placed'])
+                    if player['lost']:
+                        tableau[player['name']].remove(player['lost'])
+            rnd.append(Phase(msg, choices, tableau))
         else:
             rnd[-1].update(msg, fmt, rnd[-1])
         msg, fmt = messages.pop(0)
@@ -207,6 +225,8 @@ with tag('html'):
         for round_number, rnd in enumerate(rounds, 1):
             line('h2', 'Round %s' % round_number)
             with tag('table'):
+                with tag('tr'):
+                    render_header(tableau)
                 for phase in rnd:
                     with tag('tr'):
                         with tag('td', klass='action'):
