@@ -79,14 +79,14 @@ class Phase:
                     'placed': [],
                     'lost': [],
                     'numbers': Counter(),
-                    'tableau': tableau[player_name],
+                    'tableau': tableau[player_name].copy(),
                     }
             self.players.append(player)
         for player_name, choice in choices.items():
             if get_phase_name(choice) == self.name:
                 self.bonuses.append((player_name, choice))
 
-    def update(self, msg, fmt, phase):
+    def update(self, msg, fmt, tableau):
         ''' Update phase based on log message '''
         player = counter = None
         # Not checking 'split()[0] in line' because name might be
@@ -110,6 +110,15 @@ class Phase:
         if 'places' in msg:
             placed = re.search(r'.+ places ([^.]+).', msg).group(1)
             player['placed'].append(placed)
+            tableau[player['name']].append(placed)
+
+        # Cards discarded FROM TABLEAU (not from hand) can be distinguished
+        # by *lack* of format in the message.
+        if 'discards' in msg and not fmt and 'for extra military' not in msg:
+            lost = re.search(r'.+ discards ([^.]+).', msg).group(1)
+            player['lost'].append(lost)
+            tableau[player['name']].remove(lost)
+
 
         # cards and VPs gained:
         if 'receives' in msg:
@@ -140,22 +149,22 @@ class Phase:
             counter[PRODUCERS[planet]] += 1
 
 
+def render_header(rnd):
+    line('td', 'Actions')
+    for player in rnd[0].players:
+        tab = '#' * len(player['tableau'])
+        tab = [tab[n:n+4] for n in range(0, len(tab), 4)]
+        tab = ' '.join(tab)
+        with tag('td', klass=get_color(player['name'])):
+            line('li', player['name'])
+            line('li', tab)
+
+
 def render_actions(phase):
     # TODO: Order changes between runs. Do something
     # about the OrderedDict
     for player, choice in phase.bonuses:
         line('li', choice, klass=get_color(player))
-
-
-def render_header(tableau):
-    line('td', 'Actions')
-    for player in tableau:
-        tab = '#' * len(tableau[player])
-        tab = [tab[n:n+4] for n in range(0, len(tab), 4)]
-        tab = ' '.join(tab)
-        with tag('td', klass=get_color(player)):
-            line('li', player)
-            line('li', tab)
 
 
 def render_gains(player):
@@ -205,14 +214,9 @@ while 'End of game' not in msg:
         msg, fmt = messages.pop(0)
     while '===' not in msg:
         if 'phase ---' in msg:
-            if rnd:
-                for player in rnd[-1].players:
-                    tableau[player['name']].extend(player['placed'])
-                    if player['lost']:
-                        tableau[player['name']].remove(player['lost'])
             rnd.append(Phase(msg, choices, tableau))
         else:
-            rnd[-1].update(msg, fmt, rnd[-1])
+            rnd[-1].update(msg, fmt, tableau)
         msg, fmt = messages.pop(0)
     rounds.append(rnd)
 
@@ -226,7 +230,7 @@ with tag('html'):
             line('h2', 'Round %s' % round_number)
             with tag('table'):
                 with tag('tr'):
-                    render_header(tableau)
+                    render_header(rnd)
                 for phase in rnd:
                     with tag('tr'):
                         with tag('td', klass='action'):
