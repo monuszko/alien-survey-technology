@@ -114,10 +114,17 @@ class Phase:
 
         # Cards discarded FROM TABLEAU (not from hand) can be distinguished
         # by *lack* of format in the message.
-        if 'discards' in msg and not fmt and 'for extra military' not in msg:
-            lost = re.search(r'.+ discards ([^.]+).', msg).group(1)
-            player['lost'].append(lost)
-            tableau[player['name']].remove(lost)
+        if 'discards' in msg and not fmt:
+            if 'for extra military' in msg:
+                pass
+            elif 'at end of round' in msg:
+                pass
+            elif 'to produce on' in msg:
+                pass
+            else:
+                lost = re.search(r'.+ discards ([^.]+).', msg).group(1)
+                player['lost'].append(lost)
+                tableau[player['name']].remove(lost)
 
 
         # cards and VPs gained:
@@ -176,6 +183,7 @@ def render_gains(player):
     if  counter['explored']:
         explored = '+%s(%s)' % (counter['kept'], counter['explored'])
 
+    lost = ', '.join(pl['lost'])
     placed = ', '.join(pl['placed'])
 
     cards = counter['cards']
@@ -183,8 +191,18 @@ def render_gains(player):
     points = counter['points']
     points = '' if not points else '+%spoints' % points
 
-    content += ' '.join([explored, placed, cards, points])
-    text(content)
+    content += ' '.join([explored, cards, points]).strip()
+
+    if not (lost or placed or content):
+        return
+
+    with tag('ul'):
+        if lost:
+            line('li', lost, klass='strike')
+        if placed:
+            line('li', placed)
+        if content:
+            line('li', content)
 
     # TODO: kinds of goods sometimes have gaps between
     # them for no apparent reason.

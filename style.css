@@ -56,3 +56,7 @@ td.action {
 .novelty {
     background-color: #80d6f7;
 }
+
+.strike {
+    text-decoration: line-through;
+}
