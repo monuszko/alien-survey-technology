@@ -43,7 +43,7 @@ print('Processing {} ...'.format(log))
 messages = []
 with open('/tmp/' + log, 'r') as log_file:
     # Note to future self:
-    # (:?)? is an optional non-capturing group
+    # (?:) is an optional non-capturing group
     # which may contain a normal group.
     pattern = r'.*<Message(?: format="(\w+)")?>([^<]*)</Message>\n'
     for line in log_file:
@@ -61,8 +61,9 @@ def updated_choices(choices, msg):
     # TODO: 2 Player Advanced needs 2 choices per player.
     if ' chooses ' in msg:
         player_name, choice = re.search(r'(.+) chooses (.+)\.', msg).groups()
-        phase_name = get_phase_name(choice)
-        choices[player_name] = choice
+        # Split to support 2 Player Advanced:
+        for ch in choice.split('/'):
+            choices.append((player_name, ch))
     return choices
 
 
@@ -70,7 +71,9 @@ class Phase:
     ''' Stores information about game state at the start of the phase
     and about gains players made during the phase. '''
     def __init__(self, msg, choices, tableau):
-        self.name = re.search(r'--- (\w+) phase ---', msg).group(1)
+        self.name = re.search(r'--- (?:Second )?(\w+) phase ---', msg).group(1)
+        # might be lower case - "Second settle phase" in 2 player advanced:
+        self.name = self.name.title()
         self.bonuses = []
         self.players = []
         for player_name in tableau:
@@ -82,7 +85,7 @@ class Phase:
                     'tableau': tableau[player_name].copy(),
                     }
             self.players.append(player)
-        for player_name, choice in choices.items():
+        for player_name, choice in choices:
             if get_phase_name(choice) == self.name:
                 self.bonuses.append((player_name, choice))
 
@@ -224,7 +227,7 @@ while 'Round' not in msg:
 
 rounds = []
 while 'End of game' not in msg:
-    choices = {}
+    choices = []
     rnd = []
     while 'phase ---' not in msg:
         # Between Round and Phase
