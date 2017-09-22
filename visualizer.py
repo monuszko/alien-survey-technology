@@ -29,6 +29,15 @@ VARIANTS = {
         }
 
 
+ROMAN = {
+    'Explore': 'I',
+    'Develop': 'II',
+    'Settle': 'III',
+    'Consume': 'IV',
+    'Produce': 'V'
+}
+
+
 def get_color(player):
     colors = ('red', 'green', 'yellow', 'cyan')
     color = player.lower() if player.lower() in colors else 'blue'
@@ -45,7 +54,7 @@ with open('/tmp/' + log, 'r') as log_file:
     # Note to future self:
     # (?:) is an optional non-capturing group
     # which may contain a normal group.
-    pattern = r'.*<Message(?: format="(\w+)")?>([^<]*)</Message>\n'
+    pattern = r'.*<Message(?: format="(\w+)")?>([^<]*)<\/Message>\n'
     for line in log_file:
         match = re.search(pattern, line)
         if match:
@@ -111,7 +120,9 @@ class Phase:
 
         # placement of cards:
         if 'places' in msg:
-            placed = re.search(r'.+ places ([^.]+).', msg).group(1)
+            pattern = r'.+ places ([^.]+) at zero cost|.+ places ([^.]+)'
+            match = re.search(pattern, msg)
+            placed = match.group(1) or match.group(2)
             player['placed'].append(placed)
             tableau[player['name']].append(placed)
 
@@ -163,18 +174,14 @@ def render_header(rnd):
     line('td', 'Actions')
     for player in rnd[0].players:
         tab = '#' * len(player['tableau'])
+        # Split tableau into groups of 4 because humans can't naturally
+        # perceive amounts higher than 4.
         tab = [tab[n:n+4] for n in range(0, len(tab), 4)]
         tab = ' '.join(tab)
         with tag('td', klass=get_color(player['name'])):
-            line('li', player['name'])
-            line('li', tab)
-
-
-def render_actions(phase):
-    # TODO: Order changes between runs. Do something
-    # about the OrderedDict
-    for player, choice in phase.bonuses:
-        line('li', choice, klass=get_color(player))
+            with tag('ul'):
+                line('li', player['name'])
+                line('li', tab)
 
 
 def render_gains(player):
@@ -254,10 +261,12 @@ with tag('html'):
                     render_header(rnd)
                 for phase in rnd:
                     with tag('tr'):
-                        with tag('td', klass='action'):
-                            render_actions(phase)
+                        line('td', ROMAN[phase.name])
                         for player in phase.players:
-                            with tag('td'):
+                            klass = ''
+                            if player['name'] in (b[0] for b in phase.bonuses):
+                                klass = get_color(player['name'])
+                            with tag('td', klass=klass):
                                 render_gains(player)
 
 

@@ -11,7 +11,11 @@ td {
 }
 
 td.action {
-    width: 15%;
+    width: 5%;
+}
+
+ul {
+    list-style-type: none;
 }
 
 .red {
