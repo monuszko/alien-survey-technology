@@ -110,6 +110,8 @@ class Player:
         self.placed = []
         self.lost = []
         self.numbers = Counter()
+        # TODO: display individual cards to show what factored into player's
+        # decision when choosing action.
         self.tableau = tableau.copy()
 
     def get_color(self):
@@ -135,9 +137,6 @@ class Player:
         points = '' if not points else '+%spoints' % points
 
         content += ' '.join([explored, cards, points]).strip()
-
-        if not (lost or placed or content):
-            return
 
         with tag('ul'):
             if lost:
@@ -168,7 +167,7 @@ class Phase:
             self.players.append(Player(player_name, tableau[player_name]))
 
     def update(self, msg, fmt, tableau):
-        ''' Update phase based on log message '''
+        '''Update phase based on log message'''
         player = counter = None
         # Not checking 'split()[0] in line' because name might be
         # multi-word.
