@@ -154,30 +154,8 @@ class Player:
                 with tag('span', klass=kind):
                     text('#' * counter[kind])
 
-
-class Phase:
-    ''' Stores information about game state at the start of the phase
-    and about gains players made during the phase. '''
-    def __init__(self, msg, choices, tableau):
-        self.name = re.search(r'--- (?:Second )?(\w+) phase ---', msg).group(1)
-        # might be lower case - "Second settle phase" in 2 player advanced:
-        self.name = self.name.title()
-        self.players = []
-        for player_name in tableau:
-            self.players.append(Player(player_name, tableau[player_name]))
-
-    def update(self, msg, fmt, tableau):
-        '''Update phase based on log message'''
-        player = counter = None
-        # Not checking 'split()[0] in line' because name might be
-        # multi-word.
-        for pl in self.players:
-            if msg.startswith(pl.name):
-                player = pl
-                counter = player.numbers
-                break
-        if not player:
-            return
+    def update(self, msg, fmt, tableau, phase):
+        counter = self.numbers
 
         # exploration:
         if 'and keeps' in msg:
@@ -191,8 +169,8 @@ class Phase:
             pattern = r'.+ places ([^.]+) at zero cost|.+ places ([^.]+)'
             match = re.search(pattern, msg)
             placed = match.group(1) or match.group(2)
-            player.placed.append(placed)
-            tableau[player.name].append(placed)
+            self.placed.append(placed)
+            tableau[self.name].append(placed)
 
         # Cards discarded FROM TABLEAU (not from hand) can be distinguished
         # by *lack* of format in the message.
@@ -205,9 +183,8 @@ class Phase:
                 pass
             else:
                 lost = re.search(r'.+ discards ([^.]+).', msg).group(1)
-                player.lost.append(lost)
-                tableau[player.name].remove(lost)
-
+                self.lost.append(lost)
+                tableau[self.name].remove(lost)
 
         # cards and VPs gained:
         if 'receives' in msg:
@@ -218,7 +195,7 @@ class Phase:
             # Produce and Consume summary lines.
             if 'from' in msg and self.name not in ('Settle', 'Develop'):
                 return
-            elif self.name in ('Develop', 'Settle'):
+            elif phase in ('Develop', 'Settle'):
                 cards = re.search(r'receives (\d+) cards? from', msg).group(1)
             elif 'VP' not in msg:
                 pattern = r'receives (\d+) cards? for (Produce|Consume) phase'
@@ -236,6 +213,31 @@ class Phase:
         if 'produces on' in msg:
             planet = re.search(r'.+ produces on (.+)\.', msg).group(1)
             counter[PRODUCERS[planet]] += 1
+
+
+class Phase:
+    ''' Stores information about game state at the start of the phase
+    and about gains players made during the phase. '''
+    def __init__(self, msg, choices, tableau):
+        self.name = re.search(r'--- (?:Second )?(\w+) phase ---', msg).group(1)
+        # might be lower case - "Second settle phase" in 2 player advanced:
+        self.name = self.name.title()
+        self.players = []
+        for player_name in tableau:
+            self.players.append(Player(player_name, tableau[player_name]))
+
+    def update(self, msg, fmt, tableau):
+        '''Determine the player and delegate updating data to it'''
+        player = counter = None
+        # Not checking 'split()[0] in line' because name might be
+        # multi-word.
+        for pl in self.players:
+            if msg.startswith(pl.name):
+                player = pl
+                break
+        if not player:
+            return
+        player.update(msg, fmt, tableau, self.name)
 
 
 tableau = OrderedDict()
