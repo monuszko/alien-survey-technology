@@ -181,23 +181,38 @@ class Player:
             self.numbers['discarded'] += paid
             memory[self.name]['hand'] -= paid
 
+        # TODO: find a way to display BOTH number of cards gained and lost
+        # over the course of a phase.
+        if 'from hand' in msg:
+            pattern = r'.+ consumes (\d) cards? from hand using'
+            consumed = int(re.search(pattern, msg).group(1))
+            self.numbers['discarded'] += consumed
+            memory[self.name]['hand'] -= consumed
 
         # Cards discarded FROM TABLEAU (not from hand) can be distinguished
         # by *lack* of format in the message.
         if 'discards' in msg and not fmt:
-            if 'for extra military' in msg:
+            if 'good for extra military' in msg:
                 pass
             elif 'at end of round' in msg:
                 pattern = r'.+ discards (\d) cards? at end of round'
                 discarded = int(re.search(pattern, msg).group(1))
                 self.numbers['discarded'] += discarded
+                memory[self.name]['hand'] -= discarded
             elif 'to produce on' in msg:
-                pass
+                self.numbers['discarded'] += 1
+                memory[self.name]['hand'] -= 1
             else:
                 lost = re.search(r'.+ discards ([^.]+).', msg).group(1)
                 self.lost.append(lost)
                 memory[self.name]['tableau'].remove(lost)
-            memory[self.name]['hand'] -= self.numbers['discarded']
+
+        # Wormhole Prospectors, e.g.
+        # 'Green flips Replicant Robots.'
+        # 'Green takes Replicant Robots into hand.'
+        if msg.endswith('into hand.'):
+            counter['cards'] += 1
+            memory[self.name]['hand'] += 1
 
         # cards and VPs gained:
         if 'receives' in msg:
