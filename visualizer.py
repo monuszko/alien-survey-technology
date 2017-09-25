@@ -92,6 +92,7 @@ class Round():
                 with tag('ul'):
                     line('li', '{0} ({1})'.format(player.name, choices))
                     line('li', tab)
+                    line('li', 'Hand: %s' % player.numbers['hand'])
 
     # TODO: maybe a phase method?
     # Feature envy ?
@@ -105,14 +106,15 @@ class Round():
 
 
 class Player:
-    def __init__(self, name, tableau):
+    def __init__(self, name, memory):
         self.name = name
         self.placed = []
         self.lost = []
         self.numbers = Counter()
+        self.numbers['hand'] = memory[self.name]['hand']
         # TODO: display individual cards to show what factored into player's
         # decision when choosing action.
-        self.tableau = tableau.copy()
+        self.tableau = memory[self.name]['tableau'].copy()
 
     def get_color(self):
         colors = ('red', 'green', 'yellow', 'cyan')
@@ -154,7 +156,7 @@ class Player:
                 with tag('span', klass=kind):
                     text('#' * counter[kind])
 
-    def update(self, msg, fmt, tableau, phase):
+    def update(self, msg, fmt, memory, phase):
         counter = self.numbers
 
         # exploration:
@@ -163,6 +165,7 @@ class Player:
             explored, kept = re.search(pattern, msg).groups()
             counter['explored'] += int(explored)
             counter['kept'] += int(kept)
+            memory[self.name]['hand'] += int(kept)
 
         # placement of cards:
         if 'places' in msg:
@@ -170,7 +173,14 @@ class Player:
             match = re.search(pattern, msg)
             placed = match.group(1) or match.group(2)
             self.placed.append(placed)
-            tableau[self.name].append(placed)
+            memory[self.name]['tableau'].append(placed)
+            memory[self.name]['hand'] -= 1
+
+        if 'pays' in msg:
+            paid = int(re.search(r'.+ pays (\d) for', msg).group(1))
+            self.numbers['discarded'] += paid
+            memory[self.name]['hand'] -= paid
+
 
         # Cards discarded FROM TABLEAU (not from hand) can be distinguished
         # by *lack* of format in the message.
@@ -184,7 +194,7 @@ class Player:
             else:
                 lost = re.search(r'.+ discards ([^.]+).', msg).group(1)
                 self.lost.append(lost)
-                tableau[self.name].remove(lost)
+                memory[self.name]['tableau'].remove(lost)
 
         # cards and VPs gained:
         if 'receives' in msg:
@@ -218,15 +228,15 @@ class Player:
 class Phase:
     ''' Stores information about game state at the start of the phase
     and about gains players made during the phase. '''
-    def __init__(self, msg, choices, tableau):
+    def __init__(self, msg, choices, memory):
         self.name = re.search(r'--- (?:Second )?(\w+) phase ---', msg).group(1)
         # might be lower case - "Second settle phase" in 2 player advanced:
         self.name = self.name.title()
         self.players = []
-        for player_name in tableau:
-            self.players.append(Player(player_name, tableau[player_name]))
+        for player_name in memory:
+            self.players.append(Player(player_name, memory))
 
-    def update(self, msg, fmt, tableau):
+    def update(self, msg, fmt, memory):
         '''Determine the player and delegate updating data to it'''
         player = counter = None
         # Not checking 'split()[0] in line' because name might be
@@ -237,15 +247,18 @@ class Phase:
                 break
         if not player:
             return
-        player.update(msg, fmt, tableau, self.name)
+        player.update(msg, fmt, memory, self.name)
 
 
-tableau = OrderedDict()
+memory = OrderedDict()
 msg = messages[0][0]
 while 'Round' not in msg:
     if ' starts with ' in msg:
         player, homeworld = re.search(r'(.+) starts with (.*)\.', msg).groups()
-        tableau[player] = [homeworld]
+        memory[player] = {}
+        memory[player]['tableau'] = [homeworld]
+        # TODO: Ancient Race
+        memory[player]['hand'] = 4
     msg = messages.pop(0)[0]
 
 
@@ -259,9 +272,9 @@ while 'End of game' not in msg:
         msg, fmt = messages.pop(0)
     while '===' not in msg:
         if 'phase ---' in msg:
-            rnd.phases.append(Phase(msg, rnd.choices, tableau))
+            rnd.phases.append(Phase(msg, rnd.choices, memory))
         else:
-            rnd.phases[-1].update(msg, fmt, tableau)
+            rnd.phases[-1].update(msg, fmt, memory)
         msg, fmt = messages.pop(0)
     rounds.append(rnd)
     round_nr += 1
