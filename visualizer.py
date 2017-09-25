@@ -188,13 +188,16 @@ class Player:
             if 'for extra military' in msg:
                 pass
             elif 'at end of round' in msg:
-                pass
+                pattern = r'.+ discards (\d) cards? at end of round'
+                discarded = int(re.search(pattern, msg).group(1))
+                self.numbers['discarded'] += discarded
             elif 'to produce on' in msg:
                 pass
             else:
                 lost = re.search(r'.+ discards ([^.]+).', msg).group(1)
                 self.lost.append(lost)
                 memory[self.name]['tableau'].remove(lost)
+            memory[self.name]['hand'] -= self.numbers['discarded']
 
         # cards and VPs gained:
         if 'receives' in msg:
@@ -203,9 +206,11 @@ class Player:
                 return
             # Sentient Robots, Scientific Cruisers are handled in
             # Produce and Consume summary lines.
-            if 'from' in msg and self.name not in ('Settle', 'Develop'):
+            if 'from' in msg and phase not in ('Settle', 'Develop'):
                 return
             elif phase in ('Develop', 'Settle'):
+                # Handles on-Settle bonus including Terraforming Robots,
+                # powers that make you draw on Develop, etc.
                 cards = re.search(r'receives (\d+) cards? from', msg).group(1)
             elif 'VP' not in msg:
                 pattern = r'receives (\d+) cards? for (Produce|Consume) phase'
@@ -218,6 +223,7 @@ class Player:
                 cards, points = re.search(pattern, msg).groups()
             counter['cards'] += int(cards)
             counter['points'] += int(points)
+            memory[self.name]['hand'] += int(cards)
 
         # production of goods:
         if 'produces on' in msg:
