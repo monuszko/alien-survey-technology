@@ -4,14 +4,43 @@ import os, re
 from collections import OrderedDict, Counter
 from yattag import Doc, indent
 
+MILITARY_TARGETS = (
+    ' NOVELTY',
+    ' RARE',
+    ' GENE',
+    ' ALIEN',
+    ' AGAINST_REBEL',
+    ' XENO',
+    )
 
-PRODUCERS = {}
+CARD_DATA = {}
 with open('cards.txt', 'r') as card_file:
     for line in card_file:
         if line.startswith('N:'):
-            card_name = ' '.join(line.split(':')[1:]).strip()
+            card_name = line[2:].strip()
+            CARD_DATA[card_name] = {'military': Counter()}
         elif line.startswith('G:'):
-            PRODUCERS[card_name] = line.split(':')[1].lower().strip()
+            CARD_DATA[card_name]['goods'] = line.split(':')[1].lower().strip()
+        elif line.startswith('P:3') and 'EXTRA_MILITARY' in line:
+            # Cut the phase identifier and the last number I don't understand.
+            line = line[4:-3]
+            bonus = int(line.split(':')[1])
+            potential = False
+            if 'CONSUME' in line or 'DISCARD' in line:
+                potential = True
+            specialized = False
+            for target in MILITARY_TARGETS:
+                if target in line:
+                    target = target.strip().lower()
+                    break
+                target = 'normal'
+            target = target if target != 'against_rebel' else 'rebel'
+            key = ('' if not potential else 'potential_') + target
+            CARD_DATA[card_name]['military'][key] = bonus
+
+
+
+
 
 PHASES = (
         'Explore',
@@ -93,6 +122,8 @@ class Round():
                     line('li', '{0} ({1})'.format(player.name, choices))
                     line('li', tab)
                     line('li', 'Hand: %s' % player.numbers['hand'])
+                    line('li', 'VP tokens: %s' % player.numbers['VP'])
+                    line('li', 'Military %s' % player.get_military())
 
     # TODO: maybe a phase method?
     # Feature envy ?
@@ -112,6 +143,7 @@ class Player:
         self.lost = []
         self.numbers = Counter()
         self.numbers['hand'] = memory[self.name]['hand']
+        self.numbers['VP'] = memory[self.name]['VP']
         # TODO: display individual cards to show what factored into player's
         # decision when choosing action.
         self.tableau = memory[self.name]['tableau'].copy()
@@ -120,6 +152,21 @@ class Player:
         colors = ('red', 'green', 'yellow', 'cyan')
         color = self.name.lower() if self.name.lower() in colors else 'blue'
         return color
+
+    def get_military(self):
+        '''Stub'''
+        always = potential = 0
+        for card in self.tableau:
+            always += CARD_DATA[card]['military']['normal']
+            potential += CARD_DATA[card]['military']['potential_normal']
+
+        return '{0}({1})'.format(
+                always,
+                always + potential
+                )
+
+
+
 
     def render_changes(self):
         '''Renders changes to player that happened within current round.'''
@@ -169,7 +216,7 @@ class Player:
 
         # placement of cards:
         if 'places' in msg:
-            pattern = r'.+ places ([^.]+) at zero cost|.+ places ([^.]+)'
+            pattern = r'.+ places ([^.]+) at zero cost|.+ places (.+)\.'
             match = re.search(pattern, msg)
             placed = match.group(1) or match.group(2)
             self.placed.append(placed)
@@ -239,11 +286,12 @@ class Player:
             counter['cards'] += int(cards)
             counter['points'] += int(points)
             memory[self.name]['hand'] += int(cards)
+            memory[self.name]['VP'] += int(points)
 
         # production of goods:
         if 'produces on' in msg:
             planet = re.search(r'.+ produces on (.+)\.', msg).group(1)
-            counter[PRODUCERS[planet]] += 1
+            counter[CARD_DATA[planet]['goods']] += 1
 
 
 class Phase:
@@ -280,6 +328,7 @@ while 'Round' not in msg:
         memory[player]['tableau'] = [homeworld]
         # TODO: Ancient Race
         memory[player]['hand'] = 4
+        memory[player]['VP'] = 0
     msg = messages.pop(0)[0]
 
 
