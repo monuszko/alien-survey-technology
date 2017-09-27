@@ -19,6 +19,8 @@ with open('cards.txt', 'r') as card_file:
         if line.startswith('N:'):
             card_name = line[2:].strip()
             CARD_DATA[card_name] = {'military': Counter()}
+        elif line.startswith('T:'):
+            CARD_DATA[card_name]['raw_VP'] = int(line.split(':')[-1])
         elif line.startswith('G:'):
             CARD_DATA[card_name]['goods'] = line.split(':')[1].lower().strip()
         elif line.startswith('P:3') and 'EXTRA_MILITARY' in line:
@@ -37,9 +39,6 @@ with open('cards.txt', 'r') as card_file:
             target = target if target != 'against_rebel' else 'rebel'
             key = ('' if not potential else 'potential_') + target
             CARD_DATA[card_name]['military'][key] = bonus
-
-
-
 
 
 PHASES = (
@@ -123,6 +122,7 @@ class Round():
                     line('li', tab)
                     line('li', 'Hand: %s' % player.numbers['hand'])
                     line('li', 'VP tokens: %s' % player.numbers['VP'])
+                    line('li', 'Raw VP: %s' % player.raw_tableau_VP())
                     line('li', 'Military %s' % player.get_military())
 
     # TODO: maybe a phase method?
@@ -165,7 +165,9 @@ class Player:
                 always + potential
                 )
 
-
+    def raw_tableau_VP(self):
+        '''Return total VP value of tableau without 6-devs'''
+        return sum(CARD_DATA[card]['raw_VP'] for card in self.tableau)
 
 
     def render_changes(self):
