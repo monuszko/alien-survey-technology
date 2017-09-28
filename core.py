@@ -172,3 +172,28 @@ class Player:
         if 'produces on' in msg:
             planet = re.search(r'.+ produces on (.+)\.', msg).group(1)
             counter[self.card_data[planet]['goods']] += 1
+
+
+class Phase:
+    ''' Stores information about game state at the start of the phase
+    and about gains players made during the phase. '''
+    def __init__(self, msg, choices, memory, card_data):
+        self.name = re.search(r'--- (?:Second )?(\w+) phase ---', msg).group(1)
+        # might be lower case - "Second settle phase" in 2 player advanced:
+        self.name = self.name.title()
+        self.players = []
+        for player_name in memory:
+            self.players.append(Player(player_name, memory, card_data))
+
+    def update(self, msg, fmt, memory):
+        '''Determine the player and delegate updating data to it'''
+        player = counter = None
+        # Not checking 'split()[0] in line' because name might be
+        # multi-word.
+        for pl in self.players:
+            if msg.startswith(pl.name):
+                player = pl
+                break
+        if not player:
+            return
+        player.update(msg, fmt, memory, self.name)

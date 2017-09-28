@@ -4,7 +4,7 @@ import re
 from collections import OrderedDict, Counter
 from yattag import Doc, indent
 
-from core import get_phase_name, Player
+from core import get_phase_name, Player, Phase
 from load_data import get_card_data, get_messages
 
 
@@ -95,29 +95,6 @@ class Round():
         return names
 
 
-class Phase:
-    ''' Stores information about game state at the start of the phase
-    and about gains players made during the phase. '''
-    def __init__(self, msg, choices, memory):
-        self.name = re.search(r'--- (?:Second )?(\w+) phase ---', msg).group(1)
-        # might be lower case - "Second settle phase" in 2 player advanced:
-        self.name = self.name.title()
-        self.players = []
-        for player_name in memory:
-            self.players.append(Player(player_name, memory, CARD_DATA))
-
-    def update(self, msg, fmt, memory):
-        '''Determine the player and delegate updating data to it'''
-        player = counter = None
-        # Not checking 'split()[0] in line' because name might be
-        # multi-word.
-        for pl in self.players:
-            if msg.startswith(pl.name):
-                player = pl
-                break
-        if not player:
-            return
-        player.update(msg, fmt, memory, self.name)
 
 
 memory = OrderedDict()
@@ -143,7 +120,7 @@ while 'End of game' not in msg:
         msg, fmt = messages.pop(0)
     while '===' not in msg:
         if 'phase ---' in msg:
-            rnd.phases.append(Phase(msg, rnd.choices, memory))
+            rnd.phases.append(Phase(msg, rnd.choices, memory, CARD_DATA))
         else:
             rnd.phases[-1].update(msg, fmt, memory)
         msg, fmt = messages.pop(0)
