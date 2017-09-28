@@ -1,45 +1,14 @@
 #!/usr/bin/env python3
 
-import os, re
+import re
 from collections import OrderedDict, Counter
 from yattag import Doc, indent
 
-MILITARY_TARGETS = (
-    ' NOVELTY',
-    ' RARE',
-    ' GENE',
-    ' ALIEN',
-    ' AGAINST_REBEL',
-    ' XENO',
-    )
+from core import get_phase_name
+from load_data import get_card_data, get_messages
 
-CARD_DATA = {}
-with open('cards.txt', 'r') as card_file:
-    for line in card_file:
-        if line.startswith('N:'):
-            card_name = line[2:].strip()
-            CARD_DATA[card_name] = {'military': Counter()}
-        elif line.startswith('T:'):
-            CARD_DATA[card_name]['raw_VP'] = int(line.split(':')[-1])
-        elif line.startswith('G:'):
-            CARD_DATA[card_name]['goods'] = line.split(':')[1].lower().strip()
-        elif line.startswith('P:3') and 'EXTRA_MILITARY' in line:
-            # Cut the phase identifier and the last number I don't understand.
-            line = line[4:-3]
-            bonus = int(line.split(':')[1])
-            potential = False
-            if 'CONSUME' in line or 'DISCARD' in line:
-                potential = True
-            specialized = False
-            for target in MILITARY_TARGETS:
-                if target in line:
-                    target = target.strip().lower()
-                    break
-                target = 'normal'
-            target = target if target != 'against_rebel' else 'rebel'
-            key = ('' if not potential else 'potential_') + target
-            CARD_DATA[card_name]['military'][key] = bonus
 
+CARD_DATA = get_card_data()
 
 PHASES = (
         'Explore',
@@ -49,12 +18,6 @@ PHASES = (
         'Produce'
         )
 
-VARIANTS = {
-        'Explore +1,+1': 'Explore',
-        'Explore +5': 'Explore',
-        'Consume-Trade': 'Consume',
-        'Consume-x2': 'Consume',
-        }
 
 ROMAN = {
     'Explore': 'I',
@@ -65,26 +28,7 @@ ROMAN = {
 }
 
 
-logs = [f for f in os.listdir('/tmp') if f.startswith('export_')]
-log = max(logs)
-print('Processing {} ...'.format(log))
-
-
-messages = []
-with open('/tmp/' + log, 'r') as log_file:
-    # Note to future self:
-    # (?:) is an optional non-capturing group
-    # which may contain a normal group.
-    pattern = r'.*<Message(?: format="(\w+)")?>([^<]*)<\/Message>\n'
-    for line in log_file:
-        match = re.search(pattern, line)
-        if match:
-            fmt, message = match.groups()
-            messages.append((message, fmt))
-
-
-def get_phase_name(choice):
-    return choice if choice not in VARIANTS else VARIANTS[choice]
+messages = get_messages()
 
 
 class Round():

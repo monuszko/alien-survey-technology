@@ -1,4 +1,3 @@
-
 table {
     border: 1px solid purple;
     border-color: gray;
@@ -63,4 +62,8 @@ ul {
 
 .strike {
     text-decoration: line-through;
+}
+
+.bar-graph {
+    font-family: monospace;
 }
