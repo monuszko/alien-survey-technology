@@ -121,9 +121,23 @@ class Round():
                     line('li', '{0} ({1})'.format(player.name, choices))
                     line('li', tab)
                     line('li', 'Hand: %s' % player.numbers['hand'])
-                    line('li', 'VP tokens: %s' % player.numbers['VP'])
-                    line('li', 'Raw VP: %s' % player.raw_tableau_VP())
                     line('li', 'Military %s' % player.get_military())
+
+
+    # TODO: 6-devs
+    def render_graphs(self):
+
+        def by_bar_length(player):
+            return len(player.get_VP_bar())
+
+        players = self.phases[-1].players
+        players = sorted(players, key=by_bar_length, reverse=True)
+        with tag('ul', klass='bar-graph'):
+            for player in players:
+                klasses = '{0} {1}'.format(player.get_color(), 'moospace')
+                with tag('li'):
+                    with tag('span', klass=klasses):
+                        text(player.get_VP_bar())
 
     # TODO: maybe a phase method?
     # Feature envy ?
@@ -168,6 +182,9 @@ class Player:
     def raw_tableau_VP(self):
         '''Return total VP value of tableau without 6-devs'''
         return sum(CARD_DATA[card]['raw_VP'] for card in self.tableau)
+
+    def get_VP_bar(self):
+        return self.raw_tableau_VP()*'c' +  self.numbers['VP']*'v'
 
 
     def render_changes(self):
@@ -371,6 +388,7 @@ with tag('html'):
                                 klass = player.get_color()
                             with tag('td', klass=klass):
                                 player.render_changes()
+            rnd.render_graphs()
 
 
 output = open('report.html', 'w')
