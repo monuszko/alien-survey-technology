@@ -4,20 +4,11 @@ import re
 from collections import OrderedDict, Counter
 from yattag import Doc, indent
 
-from core import get_phase_name, Player, Phase
+from core import get_phase_name, Player, Phase, Round
 from load_data import get_card_data, get_messages
 
 
 CARD_DATA = get_card_data()
-
-
-PHASES = (
-        'Explore',
-        'Develop',
-        'Settle',
-        'Consume',
-        'Produce'
-        )
 
 
 ROMAN = {
@@ -30,71 +21,6 @@ ROMAN = {
 
 
 messages = get_messages()
-
-
-class Round():
-    def __init__(self, number):
-        self.phases = []
-        self.number = number
-        self.choices = []
-
-    def update_choices(self, msg):
-
-        def phase_order(choice):
-            return PHASES.index(get_phase_name(choice[1]))
-
-        if ' chooses ' in msg:
-            player_name, choice = re.search(r'(.+) chooses (.+)\.', msg).groups()
-            # Split to support 2 Player Advanced:
-            for ch in choice.split('/'):
-                self.choices.append((player_name, ch))
-        choices = sorted(self.choices, key=phase_order)
-
-    def render_header(self):
-        line('td', 'Actions')
-        #TODO: Do Players really belong inside Phase ? Think of pros and cons.
-        for player in self.phases[0].players:
-            tab = '#' * len(player.tableau)
-            # Split tableau into groups of 4 because humans can't naturally
-            # perceive amounts higher than 4.
-            choices = (ch[1] for ch in self.choices if ch[0] == player.name)
-            choices = '/'.join(choices)
-            tab = [tab[n:n+4] for n in range(0, len(tab), 4)]
-            tab = ' '.join(tab)
-            with tag('td', klass=player.get_color()):
-                with tag('ul'):
-                    line('li', '{0} ({1})'.format(player.name, choices))
-                    line('li', tab)
-                    line('li', 'Hand: %s' % player.numbers['hand'])
-                    line('li', 'Military %s' % player.get_military())
-
-
-    # TODO: 6-devs
-    def render_graphs(self):
-
-        def by_bar_length(player):
-            return len(player.get_VP_bar())
-
-        players = self.phases[-1].players
-        players = sorted(players, key=by_bar_length, reverse=True)
-        with tag('ul', klass='bar-graph'):
-            for player in players:
-                klasses = '{0} {1}'.format(player.get_color(), 'moospace')
-                with tag('li'):
-                    with tag('span', klass=klasses):
-                        text(player.get_VP_bar())
-
-    # TODO: maybe a phase method?
-    # Feature envy ?
-    def phase_played_by(self, phase):
-        '''Return list of player names who made this phase possible.'''
-        names = []
-        for ch in self.choices:
-            if phase.name == get_phase_name(ch[1]):
-                names.append(ch[0])
-        return names
-
-
 
 
 memory = OrderedDict()
@@ -127,6 +53,22 @@ while 'End of game' not in msg:
     rounds.append(rnd)
     round_nr += 1
 
+def render_cells(cells):
+    ''' Render a list of table cells. Each cell is a tuple:
+    (cell_html_class, tuple_of_contents)
+
+    if tuple_of_contents is length 1, it is inserted into
+    cell directly. Otherwise, it is rendered as an unorderd list.
+    '''
+    for cell in cells:
+        kl = cell[0]
+        if len(cell[1]) == 1:
+            line('td', cell[1][0], klass=kl)
+        else:
+            with tag('td', klass=kl):
+                with tag('ul'):
+                    for row in cell[1]:
+                        line('li', row)
 
 def render_changes(changes):
         with tag('ul'):
@@ -146,6 +88,13 @@ def render_changes(changes):
                     text(changes['produced'][kind])
 
 
+def render_bar_graph(bars):
+    with tag('ul', klass='bar-graph'):
+        for bar in bars:
+            with tag('li'):
+                line('span', bar[1], klass=bar[0])
+
+
 doc, tag, text, line= Doc().ttl()
 with tag('html'):
     with tag('meta'):
@@ -155,7 +104,7 @@ with tag('html'):
             line('h2', 'Round %s' % rnd.number)
             with tag('table'):
                 with tag('tr'):
-                    rnd.render_header()
+                    render_cells(rnd.get_header())
                 for phase in rnd.phases:
                     with tag('tr'):
                         line('td', ROMAN[phase.name])
@@ -165,7 +114,7 @@ with tag('html'):
                                 klass = player.get_color()
                             with tag('td', klass=klass):
                                 render_changes(player.get_changes())
-            rnd.render_graphs()
+            render_bar_graph(rnd.get_bars())
 
 
 output = open('report.html', 'w')

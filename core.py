@@ -2,6 +2,14 @@ import re
 from collections import Counter
 
 
+PHASES = (
+        'Explore',
+        'Develop',
+        'Settle',
+        'Consume',
+        'Produce'
+        )
+
 VARIANTS = {
         'Explore +1,+1': 'Explore',
         'Explore +5': 'Explore',
@@ -28,7 +36,6 @@ class Player:
 
         self.card_data = card_data
 
-
     def get_color(self):
         colors = ('red', 'green', 'yellow', 'cyan')
         color = self.name.lower() if self.name.lower() in colors else 'blue'
@@ -52,7 +59,6 @@ class Player:
 
     def get_VP_bar(self):
         return self.raw_tableau_VP()*'c' +  self.numbers['VP']*'v'
-
 
     def get_changes(self):
         '''Renders changes to player that happened within current round.'''
@@ -197,3 +203,78 @@ class Phase:
         if not player:
             return
         player.update(msg, fmt, memory, self.name)
+
+
+class Round():
+    def __init__(self, number):
+        self.phases = []
+        self.number = number
+        self.choices = []
+
+    def update_choices(self, msg):
+
+        def phase_order(choice):
+            return PHASES.index(get_phase_name(choice[1]))
+
+        if ' chooses ' in msg:
+            player_name, choice = re.search(r'(.+) chooses (.+)\.', msg).groups()
+            # Split to support 2 Player Advanced:
+            for ch in choice.split('/'):
+                self.choices.append((player_name, ch))
+        choices = sorted(self.choices, key=phase_order)
+
+    def get_header(self):
+        # This will be a list of table cells
+        header = []
+
+        header.append(
+                ('', ('Actions',))
+                )
+
+        for player in self.phases[0].players:
+            tab = '#' * len(player.tableau)
+            # Split tableau into groups of 4 because humans can't naturally
+            # perceive amounts higher than 4.
+            choices = (ch[1] for ch in self.choices if ch[0] == player.name)
+            choices = '/'.join(choices)
+            tab = [tab[n:n+4] for n in range(0, len(tab), 4)]
+            tab = ' '.join(tab)
+
+            header.append(
+                    (
+                        player.get_color(),
+                        (
+                        '{0} ({1})'.format(player.name, choices),
+                        tab,
+                        'Hand: %s' % player.numbers['hand'],
+                        'Military %s' % player.get_military(),
+                        ),
+                    )
+                )
+
+        return header
+
+
+    # TODO: 6-devs
+    def get_bars(self):
+        def by_bar_length(player):
+            return len(player.get_VP_bar())
+
+        bars = []
+        players = self.phases[-1].players
+        players = sorted(players, key=by_bar_length, reverse=True)
+
+        for player in players:
+            bars.append((player.get_color(), player.get_VP_bar()))
+        return bars
+
+
+    # TODO: maybe a phase method?
+    # Feature envy ?
+    def phase_played_by(self, phase):
+        '''Return list of player names who made this phase possible.'''
+        names = []
+        for ch in self.choices:
+            if phase.name == get_phase_name(ch[1]):
+                names.append(ch[0])
+        return names
