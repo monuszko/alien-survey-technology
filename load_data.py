@@ -42,14 +42,15 @@ def get_card_data():
     return card_data
 
 
-logs = [f for f in os.listdir('/tmp') if f.startswith('export_')]
+logs = [f for f in os.listdir('.') if f.startswith('export_')]
+
 log = max(logs)
 print('Processing {} ...'.format(log))
 
 
 def get_messages():
     messages = []
-    with open('/tmp/' + log, 'r') as log_file:
+    with open(log, 'r') as log_file:
         # Note to future self:
         # (?:) is an optional non-capturing group
         # which may contain a normal group.
