@@ -75,7 +75,11 @@ def produce_report(rounds):
                                     klass = player.get_color()
                                 with tag('td', klass=klass):
                                     render_changes(player.get_changes())
-                render_bar_graph(rnd.get_bars())
+                bars = rnd.get_bars()
+                render_bar_graph(bars)
+                vp_taken = sum(b[1].count('v') for b in bars)
+                vp_left = 12 * len(phase.players) - vp_taken
+                text('Tokens left: {0}'.format(vp_left))
 
 
     output = open('report.html', 'w')
