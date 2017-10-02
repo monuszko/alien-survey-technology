@@ -227,10 +227,6 @@ class Round():
         # This will be a list of table cells
         header = []
 
-        header.append(
-                ('', ('Actions',))
-                )
-
         for player in self.phases[0].players:
             tab = '#' * len(player.tableau)
             # Split tableau into groups of 4 because humans can't naturally
@@ -247,7 +243,6 @@ class Round():
                         '{0} ({1})'.format(player.name, choices),
                         tab,
                         'Hand: %s' % player.numbers['hand'],
-                        'Military %s' % player.get_military(),
                         ),
                     )
                 )

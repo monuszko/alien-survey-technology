@@ -32,21 +32,27 @@ def render_cells(cells):
 
 
 def render_changes(changes):
-        with tag('ul'):
-            if changes['lost']:
-                line('li', changes['lost'], klass='strike')
-            if changes['placed']:
-                line('li', changes['placed'])
-            if changes['content']:
-                line('li', changes['content'])
+    # TODO: maybe empty strings wasn't a bright idea ?
+    changes1 = any(changes[ch] for ch in ('lost', 'placed', 'content'))
+    changes2 = any(ch for ch in changes['produced'].values())
+    if not changes1 and not changes2:
+        return
 
-        # TODO: kinds of goods sometimes have gaps between
-        # them for no apparent reason.
-        for kind in ('novelty', 'rare', 'gene', 'alien'):
-            # Don't add empty spans to DOM tree
-            if changes['produced'][kind]:
-                with tag('span', klass=kind):
-                    text(changes['produced'][kind])
+    with tag('ul'):
+        if changes['lost']:
+            line('li', changes['lost'], klass='strike')
+        if changes['placed']:
+            line('li', changes['placed'])
+        if changes['content']:
+            line('li', changes['content'])
+
+    # TODO: kinds of goods sometimes have gaps between
+    # them for no apparent reason.
+    for kind in ('novelty', 'rare', 'gene', 'alien'):
+        # Don't add empty spans to DOM tree
+        if changes['produced'][kind]:
+            with tag('span', klass=kind):
+                text(changes['produced'][kind])
 
 
 def render_bar_graph(bars):
@@ -62,10 +68,19 @@ def produce_report(rounds):
             doc.stag('link', rel="stylesheet", href="style.css")
         with tag('body'):
             for rnd in rounds:
-                line('h2', 'Round %s' % rnd.number)
-                with tag('table'):
+                title_id = 'title-{0}'.format(rnd.number)
+                line('h2', 'Round %s' % rnd.number, target=title_id)
+                parent_id = 'table-{0}'.format(rnd.number)
+                with tag('table', id=parent_id):
                     with tag('tr'):
+                        with tag('td'):
+                            line('a', 'Show bonuses', href='#' + parent_id)
+                            line('a', 'Hide bonuses', klass='hidden', href='#' + title_id)
                         render_cells(rnd.get_header())
+                    with tag('tr', klass='hidden'):
+                        line('td', 'phase bonuses')
+                        for pl in rnd.phases[0].players:
+                            line('td', pl.get_military())
                     for phase in rnd.phases:
                         with tag('tr'):
                             line('td', ROMAN[phase.name])

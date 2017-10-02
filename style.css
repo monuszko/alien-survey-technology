@@ -9,6 +9,10 @@ td {
     border-color: gray;
 }
 
+td:empty {
+    background: #aaaaaa;
+}
+
 td.action {
     width: 5%;
 }
@@ -66,4 +70,16 @@ ul {
 
 .bar-graph {
     font-family: monospace;
+}
+
+.hidden {
+    display: none;
+}
+
+:target .hidden {
+    display: table-row;
+}
+
+:target a:not(.hidden) {
+    display: none;
 }
