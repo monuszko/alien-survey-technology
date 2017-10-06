@@ -32,10 +32,8 @@ def render_cells(cells):
 
 
 def render_changes(changes):
-    # TODO: maybe empty strings wasn't a bright idea ?
-    changes1 = any(changes[ch] for ch in ('lost', 'placed', 'content'))
-    changes2 = any(ch for ch in changes['produced'].values())
-    if not changes1 and not changes2:
+    changed = any(changes[ch] for ch in ('lost', 'placed', 'content', 'produced'))
+    if not changed:
         return
 
     with tag('ul'):
@@ -46,20 +44,17 @@ def render_changes(changes):
         if changes['content']:
             line('li', changes['content'])
 
-    # TODO: kinds of goods sometimes have gaps between
-    # them for no apparent reason.
-    for kind in ('novelty', 'rare', 'gene', 'alien'):
-        # Don't add empty spans to DOM tree
-        if changes['produced'][kind]:
-            with tag('span', klass=kind):
-                text(changes['produced'][kind])
+    for group in changes['produced']:
+        kl = {'n': 'novelty', 'r': 'rare', 'g': 'gene', 'a': 'alien'}[group[0]]
+        with tag('span', klass=kl):
+            text('#' * len(group))
 
 
-def render_bar_graph(bars):
+def render_bar_graph(players):
     with tag('ul', klass='bar-graph'):
-        for bar in bars:
+        for player in reversed(sorted(players, key=lambda x: len(x.get_VP_bar()))):
             with tag('li'):
-                line('span', bar[1], klass=bar[0])
+                line('span', player.get_VP_bar(), klass=player.get_color())
 
 
 def produce_report(rounds):
@@ -90,9 +85,10 @@ def produce_report(rounds):
                                     klass = player.get_color()
                                 with tag('td', klass=klass):
                                     render_changes(player.get_changes())
-                bars = rnd.get_bars()
-                render_bar_graph(bars)
-                vp_taken = sum(b[1].count('v') for b in bars)
+                render_bar_graph(rnd.phases[-1].players)
+                vp_taken = 0
+                for player in rnd.phases[-1].players:
+                    vp_taken += len(player.get_VP_bar().strip('c'))
                 vp_left = 12 * len(phase.players) - vp_taken
                 text('Tokens left: {0}'.format(vp_left))
 

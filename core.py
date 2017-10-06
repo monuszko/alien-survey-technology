@@ -83,10 +83,11 @@ class Player:
                 'lost': lost,
                 'placed': placed,
                 'content': content,
-                'produced': {}
+                'produced': []
                 }
         for kind in ('novelty', 'rare', 'gene', 'alien'):
-            changes['produced'][kind] = '#' * counter[kind]
+            if counter[kind]:
+                changes['produced'].append(kind[0] * counter[kind])
         return changes
 
     def update(self, msg, fmt, memory, phase):
@@ -248,20 +249,6 @@ class Round():
                 )
 
         return header
-
-
-    # TODO: 6-devs
-    def get_bars(self):
-        def by_bar_length(player):
-            return len(player.get_VP_bar())
-
-        bars = []
-        players = self.phases[-1].players
-        players = sorted(players, key=by_bar_length, reverse=True)
-
-        for player in players:
-            bars.append((player.get_color(), player.get_VP_bar()))
-        return bars
 
 
     # TODO: maybe a phase method?
