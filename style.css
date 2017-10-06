@@ -64,6 +64,10 @@ ul {
     background-color: #80d6f7;
 }
 
+.military {
+    color: red;
+}
+
 .strike {
     text-decoration: line-through;
 }

@@ -57,6 +57,19 @@ def render_bar_graph(players):
                 line('span', player.get_VP_bar(), klass=player.get_color())
 
 
+def render_military(player):
+    for l in player.get_military():
+        target, always, potential = l
+        always = str(always)
+        potential = str(potential)
+        with tag('span', klass='military ' + target):
+            sign = '+' if int(always) >= 0 else '-'
+            tmp = '({0}{1})'.format(sign, always)
+            if potential > always:
+                tmp = tmp.replace(always, always + '/' + potential)
+            text(tmp)
+
+
 def produce_report(rounds):
     with tag('html'):
         with tag('meta'):
@@ -75,7 +88,8 @@ def produce_report(rounds):
                     with tag('tr', klass='hidden'):
                         line('td', 'phase bonuses')
                         for pl in rnd.phases[0].players:
-                            line('td', pl.get_military())
+                            with tag('td'):
+                                render_military(pl)
                     for phase in rnd.phases:
                         with tag('tr'):
                             line('td', ROMAN[phase.name])
@@ -87,7 +101,7 @@ def produce_report(rounds):
                                     render_changes(player.get_changes())
                 render_bar_graph(rnd.phases[-1].players)
                 vp_taken = 0
-                for player in rnd.phases[-1].players:
+                for player in phase.players:
                     vp_taken += len(player.get_VP_bar().strip('c'))
                 vp_left = 12 * len(phase.players) - vp_taken
                 text('Tokens left: {0}'.format(vp_left))

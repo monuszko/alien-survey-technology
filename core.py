@@ -42,16 +42,23 @@ class Player:
         return color
 
     def get_military(self):
-        '''Stub'''
-        always = potential = 0
+        tmp = []
+
+        always = extra = 0
         for card in self.tableau:
             always += self.card_data[card]['military']['normal']
-            potential += self.card_data[card]['military']['potential_normal']
+            extra += self.card_data[card]['military']['potential_normal']
+        tmp.append(('normal', always, always+extra))
 
-        return '{0}({1})'.format(
-                always,
-                always + potential
-                )
+        for card in self.tableau:
+            for target in ('novelty', 'rare', 'gene', 'alien', 'rebel', 'xeno'):
+                always = extra = 0
+                always = self.card_data[card]['military'].get(target, 0)
+                extra = self.card_data[card]['military'].get('potential_' + target, 0)
+                if not (always or extra):
+                    continue
+                tmp.append((target, always + tmp[0][1], always+extra + tmp[0][2]))
+        return tmp
 
     def raw_tableau_VP(self):
         '''Return total VP value of tableau without 6-devs'''

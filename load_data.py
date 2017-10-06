@@ -2,17 +2,15 @@ import os, re
 from collections import Counter
 
 
-MILITARY_TARGETS = (
-    ' NOVELTY',
-    ' RARE',
-    ' GENE',
-    ' ALIEN',
-    ' AGAINST_REBEL',
-    ' XENO',
-    )
-
-
 def get_card_data():
+    military_targets = (
+        ' NOVELTY',
+        ' RARE',
+        ' GENE',
+        ' ALIEN',
+        ' AGAINST_REBEL',
+        ' XENO',
+        )
     card_data = {}
     with open('cards.txt', 'r') as card_file:
         for line in card_file:
@@ -31,7 +29,7 @@ def get_card_data():
                 if 'CONSUME' in line or 'DISCARD' in line:
                     potential = True
                 specialized = False
-                for target in MILITARY_TARGETS:
+                for target in military_targets:
                     if target in line:
                         target = target.strip().lower()
                         break
