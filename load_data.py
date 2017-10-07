@@ -13,22 +13,40 @@ def get_card_data():
         )
     card_data = {}
     with open('cards.txt', 'r') as card_file:
+        card = None
         for line in card_file:
             if line.startswith('N:'):
                 card_name = line[2:].strip()
-                card_data[card_name] = {'military': Counter()}
+                card_data[card_name] = {
+                        'military': Counter(),
+                        'flags': set(),
+                        '?_VP': [],
+                        }
+                card = card_data[card_name]
             elif line.startswith('T:'):
-                card_data[card_name]['raw_VP'] = int(line.split(':')[-1])
+                card_type, cost, vp = line.split(':')[1:]
+                cost, vp = int(cost), int(vp)
+                card['raw_VP'] = vp
+                card['cost'] = cost
+                card['flags'].add('WORLD' if card_type == '1' else 'DEVEL')
             elif line.startswith('G:'):
-                card_data[card_name]['goods'] = line.split(':')[1].lower().strip()
+                goods = line.split(':')[1].strip()
+                card['goods'] = goods.lower()
+            elif line.startswith('F:'):
+                flags = line[2:].split('|')
+                card['flags'] |= {flag.strip() for flag in flags}
+                if card['cost'] == 6:
+                    card['flags'].add('SIX')
+                if card['flags'] & {'WORLD', 'MILITARY'} == {'WORLD'}:
+                    card['flags'].add('NONMILITARY')
+                if card.get('goods') and 'WINDFALL' not in card['flags']:
+                    card['flags'].add('PRODUCTION')
             elif line.startswith('P:3') and 'EXTRA_MILITARY' in line:
-                # Cut the phase identifier and the last number I don't understand.
                 line = line[4:-3]
                 bonus = int(line.split(':')[1])
                 potential = False
                 if 'CONSUME' in line or 'DISCARD' in line:
                     potential = True
-                specialized = False
                 for target in military_targets:
                     if target in line:
                         target = target.strip().lower()
@@ -36,7 +54,22 @@ def get_card_data():
                     target = 'normal'
                 target = target if target != 'against_rebel' else 'rebel'
                 key = ('' if not potential else 'potential_') + target
-                card_data[card_name]['military'][key] = bonus
+                card['military'][key] = bonus
+            elif line.startswith('V:'):
+                vp, code, name = line.split(':')[1:]
+                code = code.replace('_FLAG', '')
+                if code in ('ALIEN_TECHNOLOGY', 'ALIEN_SCIENCE', 'ALIEN_UPLIFT'):
+                    continue;
+                elif code == 'NAME':
+                    code = {name.strip()}
+                elif code in ('THREE_VP', 'NEGATIVE_MILITARY', 'TOTAL_MILITARY'):
+                    code = {code}
+                elif code.startswith('ANTI_XENO'):
+                    a = 'ANTI_XENO'
+                    code = {w.lstrip('_') for w in code.partition(a) if w}
+                else:
+                    code = set(code.split('_'))
+                card['?_VP'].append((code, vp))
     return card_data
 
 
