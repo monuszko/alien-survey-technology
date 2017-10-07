@@ -50,6 +50,7 @@ def render_changes(changes):
             text('#' * len(group))
 
 
+#BUG: displays info from the start of the used phase, not end of round
 def render_bar_graph(players):
     with tag('ul', klass='bar-graph'):
         for player in reversed(sorted(players, key=lambda x: len(x.get_VP_bar()))):
@@ -102,7 +103,7 @@ def produce_report(rounds):
                 render_bar_graph(rnd.phases[-1].players)
                 vp_taken = 0
                 for player in phase.players:
-                    vp_taken += len(player.get_VP_bar().strip('c'))
+                    vp_taken += len(player.get_VP_bar().strip('c?'))
                 vp_left = 12 * len(phase.players) - vp_taken
                 text('Tokens left: {0}'.format(vp_left))
 

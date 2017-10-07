@@ -29,18 +29,21 @@ def get_card_data():
                 card['raw_VP'] = vp
                 card['cost'] = cost
                 card['flags'].add('WORLD' if card_type == '1' else 'DEVEL')
+                if card['cost'] == 6:
+                    card['flags'].add('SIX')
             elif line.startswith('G:'):
                 goods = line.split(':')[1].strip()
                 card['goods'] = goods.lower()
+                # This assumes too much, but you can't know for sure without
+                # reading the optional F: (flags) line, which comes *later*.
+                card['flags'] |= {goods, 'PRODUCTION', 'NONMILITARY'}
             elif line.startswith('F:'):
                 flags = line[2:].split('|')
                 card['flags'] |= {flag.strip() for flag in flags}
-                if card['cost'] == 6:
-                    card['flags'].add('SIX')
                 if card['flags'] & {'WORLD', 'MILITARY'} == {'WORLD'}:
                     card['flags'].add('NONMILITARY')
-                if card.get('goods') and 'WINDFALL' not in card['flags']:
-                    card['flags'].add('PRODUCTION')
+                if 'WINDFALL' in card['flags']:
+                    card['flags'].remove('PRODUCTION')
             elif line.startswith('P:3') and 'EXTRA_MILITARY' in line:
                 line = line[4:-3]
                 bonus = int(line.split(':')[1])
@@ -69,7 +72,7 @@ def get_card_data():
                     code = {w.lstrip('_') for w in code.partition(a) if w}
                 else:
                     code = set(code.split('_'))
-                card['?_VP'].append((code, vp))
+                card['?_VP'].append((code, int(vp)))
     return card_data
 
 

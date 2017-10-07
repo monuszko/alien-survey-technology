@@ -64,8 +64,44 @@ class Player:
         '''Return total VP value of tableau without 6-devs'''
         return sum(self.card_data[card]['raw_VP'] for card in self.tableau)
 
+    #TODO: begs for refactoring
+    def vp_from_rewards(self, card, awards):
+        ''' How many VP does a card get from a list of awards ? (6 devs...)'''
+        #TODO: NEGATIVE_MILITARY
+        #TODO: TOTAL_MILITARY
+        #TODO: THREE_VP
+        #TODO: CONSUME, EXPLORE, TRADE
+        for reqs, award in awards:
+            if reqs <= self.card_data[card]['flags']:
+                return award
+            elif card in reqs:
+                return award
+        return 0
+
+    # TODO: how about a new class ?
+    def question_marks(self, card):
+        '''Return the VP value for a variable VP card'''
+        award_list = self.card_data[card]['?_VP']
+        if not award_list:
+            return 0
+        total = 0
+        for c in self.tableau:
+            gain = self.vp_from_rewards(c, award_list)
+            total += gain
+        return total
+
+    def tableau_question_marks(self):
+        '''Return the total VP for all variable VP cards in tableau.'''
+        total = 0
+        variable = [c for c in self.tableau if self.card_data[c]['?_VP']]
+        return sum(self.question_marks(card) for card in self.tableau)
+
+
     def get_VP_bar(self):
-        return self.raw_tableau_VP()*'c' +  self.numbers['VP']*'v'
+        for_cards = self.raw_tableau_VP() * 'c' 
+        for_tokens = self.numbers['VP'] * 'v'
+        for_variable = self.tableau_question_marks() * '?'
+        return ''.join([for_cards, for_tokens, for_variable])
 
     def get_changes(self):
         '''Renders changes to player that happened within current round.'''
