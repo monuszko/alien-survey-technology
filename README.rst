@@ -51,11 +51,15 @@ action - who outwitted whom.
 Bars at the end of each round show total victory points. ``c`` stands for card,
 ``v`` are victory *tokens*. 6 cost developments are currently not implemented.
 
+Known issues
+------------
+
+No support for goals, takeovers, prestige and some other mechanics from the
+first arc. It would be best if someone familiar with it sent a patch.
 
 Future plans
 ------------
 
-* value of 6-cost developments
 * ``.svg`` symbols to replace as much text as possible ! True to *RftG* spirit.
 * more graphs
 * more control over which log is opened and where reports are saved.

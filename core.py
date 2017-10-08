@@ -67,8 +67,6 @@ class Player:
     #TODO: begs for refactoring
     def vp_from_rewards(self, card, awards):
         ''' How many VP does a card get from a list of awards ? (6 devs...)'''
-        #TODO: NEGATIVE_MILITARY
-        #TODO: TOTAL_MILITARY
         for reqs, award in awards:
             if reqs <= self.card_data[card]['flags']:
                 return award
@@ -84,11 +82,15 @@ class Player:
             return 0
         total = 0
         for c in self.tableau:
-            gain = self.vp_from_rewards(c, award_list)
-            total += gain
-            for req, award in award_list:
-                if req == {'THREE_VP'}:
-                    total += self.numbers['VP']//3
+            total += self.vp_from_rewards(c, award_list)
+        for req, award in award_list:
+            if req == {'THREE_VP'}:
+                total += self.numbers['VP']//3
+            elif req == {'TOTAL_MILITARY'}:
+                total += self.get_military()[0][1]
+            elif req == {'NEGATIVE_MILITARY'}:
+                military = self.get_military()[0][1]
+                total += abs(min(military, 0))
         return total
 
     def tableau_question_marks(self):
@@ -99,7 +101,7 @@ class Player:
 
 
     def get_VP_bar(self):
-        for_cards = self.raw_tableau_VP() * 'c' 
+        for_cards = self.raw_tableau_VP() * 'c'
         for_tokens = self.numbers['VP'] * 'v'
         for_variable = self.tableau_question_marks() * '?'
         return ''.join([for_cards, for_tokens, for_variable])
@@ -155,7 +157,8 @@ class Player:
             memory[self.name]['hand'] -= 1
 
         if 'pays' in msg:
-            paid = int(re.search(r'.+ pays (\d) for', msg).group(1))
+            pattern = r'.+ pays (\d) (?:for|to conquer)'
+            paid = int(re.search(pattern, msg).group(1))
             self.numbers['discarded'] += paid
             memory[self.name]['hand'] -= paid
 
