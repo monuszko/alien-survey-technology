@@ -69,8 +69,6 @@ class Player:
         ''' How many VP does a card get from a list of awards ? (6 devs...)'''
         #TODO: NEGATIVE_MILITARY
         #TODO: TOTAL_MILITARY
-        #TODO: THREE_VP
-        #TODO: CONSUME, EXPLORE, TRADE
         for reqs, award in awards:
             if reqs <= self.card_data[card]['flags']:
                 return award
@@ -88,6 +86,9 @@ class Player:
         for c in self.tableau:
             gain = self.vp_from_rewards(c, award_list)
             total += gain
+            for req, award in award_list:
+                if req == {'THREE_VP'}:
+                    total += self.numbers['VP']//3
         return total
 
     def tableau_question_marks(self):

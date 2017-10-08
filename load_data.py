@@ -44,6 +44,9 @@ def get_card_data():
                     card['flags'].add('NONMILITARY')
                 if 'WINDFALL' in card['flags']:
                     card['flags'].remove('PRODUCTION')
+            elif line.startswith('P:1'):
+                if 'ORB_MOVEMENT' not in line:
+                    card['flags'].add('EXPLORE')
             elif line.startswith('P:3') and 'EXTRA_MILITARY' in line:
                 line = line[4:-3]
                 bonus = int(line.split(':')[1])
@@ -58,6 +61,11 @@ def get_card_data():
                 target = target if target != 'against_rebel' else 'rebel'
                 key = ('' if not potential else 'potential_') + target
                 card['military'][key] = bonus
+            elif line.startswith('P:4'):
+                if 'TRADE_ACTION' in line or 'TRADE' not in line:
+                    card['flags'].add('CONSUME')
+                else:
+                    card['flags'].add('TRADE')
             elif line.startswith('V:'):
                 vp, code, name = line.split(':')[1:]
                 code = code.replace('_FLAG', '')
