@@ -1,5 +1,9 @@
 *.swp
 *.pyc
+*.sav
+
+export*.xml
 
 cards.txt
 report.html
+README.html
