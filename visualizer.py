@@ -11,22 +11,25 @@ from render import produce_report
 CARD_DATA = get_card_data()
 messages = get_messages()
 
+game = {
+    'players': [],
+    'rounds': [],
+    }
 
-memory = OrderedDict()
 msg = messages[0][0]
 while 'Round' not in msg:
     if ' starts with ' in msg:
-        player, homeworld = re.search(r'(.+) starts with (.*)\.', msg).groups()
-        memory[player] = {}
-        memory[player]['tableau'] = [homeworld]
-        # TODO: Ancient Race
-        memory[player]['hand'] = 4
-        memory[player]['VP'] = 0
+        name, homeworld = re.search(r'(.+) starts with (.*)\.', msg).groups()
+        game['players'].append(Player(name, homeworld, CARD_DATA))
+        # Unfortunately, cards discarded at start of the game are not logged
+        # except for the human player.
+        if homeworld == 'Ancient Race':
+            game['players'][-1].hand[-1].append(-1)
     msg = messages.pop(0)[0]
 
 
-rounds = []
 round_nr = 1
+phase_nr = 1
 while 'End of game' not in msg:
     rnd = Round(round_nr)
     while 'phase ---' not in msg:
@@ -35,13 +38,20 @@ while 'End of game' not in msg:
         msg, fmt = messages.pop(0)
     while '===' not in msg:
         if 'phase ---' in msg:
-            rnd.phases.append(Phase(msg, rnd.choices, memory, CARD_DATA))
+            phase = Phase(msg, phase_nr, rnd.choices, CARD_DATA)
+            rnd.phases.append(phase)
+            phase_nr += 1
+            for player in game['players']:
+                player.add_new_phase()
         else:
-            rnd.phases[-1].update(msg, fmt, memory)
+            for player in game['players']:
+                if msg.startswith(player.name):
+                    player.update(msg, fmt, phase)
+                    break
         msg, fmt = messages.pop(0)
-    rounds.append(rnd)
+    game['rounds'].append(rnd)
     round_nr += 1
 
 
-produce_report(rounds)
+produce_report(game)
 
