@@ -46,7 +46,7 @@ while 'End of game' not in msg:
         else:
             for player in game['players']:
                 if msg.startswith(player.name):
-                    player.update(msg, fmt, phase)
+                    player.update(msg, fmt, phase.name)
                     break
         msg, fmt = messages.pop(0)
     game['rounds'].append(rnd)

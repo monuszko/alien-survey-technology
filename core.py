@@ -29,17 +29,18 @@ class Player:
         # first round.
         self.placed = [[homeworld]]
         self.lost = [[]]
-        self.explored = [()]
+        self.explored = [0]
         self.hand = [[4]]
         # Unlike drawing cards, VP points are gained only once per turn.
         # Therefore no need for list.
         self.vp = [0]
         self.produced = [[]]
+        self.last_msg = None
 
         self.card_data = card_data
 
     def add_new_phase(self):
-        self.explored.append(())
+        self.explored.append(0)
         self.placed.append([])
         self.lost.append([])
         self.hand.append([])
@@ -54,7 +55,8 @@ class Player:
             tableau.remove(l)
         return tableau
 
-    def get_hand(self, phase_nr):
+    def get_hand(self, phase_nr=None):
+        phase_nr = 1 if not phase_nr else phase_nr + 1
         return sum(chain.from_iterable(self.hand[:phase_nr]))
 
     def get_color(self):
@@ -133,14 +135,14 @@ class Player:
         content = ''
 
         expl = self.explored[phase_nr]
-        expl = '+%s(%s)' % expl if expl else ''
-
+        expl = '' if not expl else str(expl)
         lost = ', '.join(self.lost[phase_nr]) if self.lost[phase_nr] else ''
         placed = ', '.join(self.placed[phase_nr]) if self.placed[phase_nr] else ''
         cards = sum(int(c) for c in self.hand[phase_nr] if int(c) > 0)
         cards = '' if not cards else '+%scards' % cards
         points = self.vp[phase_nr]
         points = '' if not points else '+%spoints' % points
+        points = '' if expl else ''
 
         content += ' '.join([expl, cards, points]).strip()
 
@@ -158,24 +160,34 @@ class Player:
     def discard(self, howmany):
         self.draw(howmany * -1)
 
-    def update(self, msg, fmt, phase):
+    def update(self, msg, fmt, phase_name):
 
         # exploration:
-        if 'and keeps' in msg:
-            pattern = r'.+ draws (\d+) and keeps (\d+).'
-            explored, kept = re.search(pattern, msg).groups()
-            self.explored[-1] = (explored, kept)
-            self.draw(kept)
+        if 'keeps' in msg:
+            if msg.startswith(self.name + ' keeps'):
+                # Gamblng World triggered
+                self.draw(1)
+            else:
+                pattern = r'.+ draws (\d+) and keeps (\d+).'
+                explored, kept = re.search(pattern, msg).groups()
+                self.explored[-1] = explored
+                self.draw(kept)
 
         # placement of cards:
-        if 'places' in msg:
+        elif 'places' in msg:
             pattern = r'.+ places ([^.]+) at zero cost|.+ places (.+)\.'
             match = re.search(pattern, msg)
             placed = match.group(1) or match.group(2)
             self.placed[-1].append(placed)
-            self.discard(1)
+            # Wormhole Prospectors places card from top of deck - no discard
+            # But Terraforming Project uses the same message and FROM HAND!!
+            worpro = '{0} flips {1}.'.format(self.name, placed)
+            if 'at zero cost' not in msg:
+                self.discard(1)
+            elif self.last_msg and worpro not in self.last_msg:
+                self.discard(1)
 
-        if 'pays' in msg:
+        elif 'pays' in msg:
             pattern = r'.+ pays (\d) (?:for|to conquer)'
             paid = int(re.search(pattern, msg).group(1))
 
@@ -183,14 +195,14 @@ class Player:
 
         # TODO: find a way to display BOTH number of cards gained and lost
         # over the course of a phase.
-        if 'from hand' in msg:
+        elif 'from hand' in msg:
             pattern = r'.+ consumes (\d) cards? from hand using'
             consumed = int(re.search(pattern, msg).group(1))
             self.discard(consumed)
 
         # Cards discarded FROM TABLEAU (not from hand) can be distinguished
         # by *lack* of format in the message.
-        if 'discards' in msg and not fmt:
+        elif 'discards' in msg and not fmt:
             if 'good for extra military' in msg:
                 pass
             elif 'at end of round' in msg:
@@ -206,19 +218,19 @@ class Player:
         # Wormhole Prospectors, e.g.
         # 'Green flips Replicant Robots.'
         # 'Green takes Replicant Robots into hand.'
-        if msg.endswith('into hand.'):
+        elif msg.endswith('into hand.'):
             self.draw(1)
 
         # cards and VPs gained:
-        if 'receives' in msg:
+        elif 'receives' in msg:
             cards = points = 0
             if 'Explore' in msg:
                 return
             # Sentient Robots, Scientific Cruisers are handled in
             # Produce and Consume summary lines.
-            if 'from' in msg and phase not in ('Settle', 'Develop'):
+            if 'from' in msg and phase_name not in ('Settle', 'Develop'):
                 return
-            elif phase in ('Develop', 'Settle'):
+            elif phase_name in ('Develop', 'Settle'):
                 # Handles on-Settle bonus including Terraforming Robots,
                 # powers that make you draw on Develop, etc.
                 cards = re.search(r'receives (\d+) cards? from', msg).group(1)
@@ -236,10 +248,11 @@ class Player:
         #TODO: solve the int/str issue once and for all
 
         # production of goods:
-        if 'produces on' in msg:
+        elif 'produces on' in msg:
             planet = re.search(r'.+ produces on (.+)\.', msg).group(1)
             produced = self.card_data[planet]['goods']
             self.produced[-1].append(produced)
+        self.last_msg = msg
 
 
 class Phase:
@@ -289,7 +302,7 @@ class Round():
                         (
                         '{0} ({1})'.format(player.name, choices),
                         tab,
-                        'Hand: %s' % player.get_hand(first_phase.nr),
+                        'Hand: %s' % player.get_hand(first_phase.nr-1),
                         ),
                     )
                 )
