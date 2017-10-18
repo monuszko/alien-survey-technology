@@ -153,105 +153,112 @@ class Player:
                 'produced': [good[0] for good in self.produced[phase_nr]]
                 }
         return changes
-
+    
     def draw(self, howmany):
         self.hand[-1].append(int(howmany))
 
     def discard(self, howmany):
         self.draw(howmany * -1)
 
+    def _parse_placement(self, msg):
+        pattern = r'.+ places ([^.]+) at zero cost|.+ places (.+)\.'
+        match = re.search(pattern, msg)
+        placed = match.group(1) or match.group(2)
+        self.placed[-1].append(placed)
+        # Wormhole Prospectors places card from top of deck - no discard
+        # But Terraforming Project uses the same message and FROM HAND!!
+        worpro = '{0} flips {1}.'.format(self.name, placed)
+        if 'at zero cost' not in msg:
+            self.discard(1)
+        elif self.last_msg and worpro not in self.last_msg:
+            self.discard(1)
+            
+    def _parse_payment(self, msg):
+        pattern = r'.+ pays (\d) (?:for|to conquer)'
+        paid = int(re.search(pattern, msg).group(1))
+        self.discard(paid)
+    # TODO: find a way to display BOTH number of cards gained and lost
+    # over the course of a phase.
+
+    def _parse_production(self, msg):
+        planet = re.search(r'.+ produces on (.+)\.', msg).group(1)
+        produced = self.card_data[planet]['goods']
+        self.produced[-1].append(produced)
+
+    def _parse_card_and_point_gain(self, msg, phase_name):
+        cards = points = 0
+        if 'Explore' in msg:
+            return
+        # Sentient Robots, Scientific Cruisers are handled in
+        # Produce and Consume summary lines.
+        if 'from' in msg and phase_name not in ('Settle', 'Develop'):
+            return
+        elif phase_name in ('Develop', 'Settle'):
+            # Handles on-Settle bonus including Terraforming Robots,
+            # powers that make you draw on Develop, etc.
+            cards = re.search(r'receives (\d+) cards? from', msg).group(1)
+        elif 'VP' not in msg:
+            pattern = r'receives (\d+) cards? for (Produce|Consume) phase'
+            cards = re.search(pattern, msg).group(1)
+        elif 'card' not in msg:
+            pattern = r'.+ receives (\d+) VPs? for Consume phase.'
+            points = re.search(pattern, msg).group(1)
+        elif 'card' in msg and 'VP' in msg:
+            pattern = r'.+ receives (\d+) cards? and (\d+) VPs?'
+            cards, points = re.search(pattern, msg).groups()
+        self.draw(cards)
+        self.vp[-1] = int(points)
+    #TODO: solve the int/str issue once and for all
+
+    def _parse_card_consumption(self, msg):
+        pattern = r'.+ consumes (\d) cards? from hand using'
+        consumed = int(re.search(pattern, msg).group(1))
+        self.discard(consumed)
+
+    def _parse_discard(self, msg):
+        if 'good for extra military' in msg:
+            pass
+        elif 'at end of round' in msg:
+            pattern = r'.+ discards (\d) cards? at end of round'
+            discarded = int(re.search(pattern, msg).group(1))
+            self.discard(discarded)
+        elif 'to produce on' in msg:
+            self.discard(1)
+        else:
+            # Cards discarded FROM TABLEAU (not from hand) can be
+            # distinguished by *lack* of format in the message.
+            lost = re.search(r'.+ discards ([^.]+).', msg).group(1)
+            self.lost[-1].append(lost)
+
+    def _parse_exploration(self, msg):
+        pattern = r'.+ draws (\d+) and keeps (\d+).'
+        explored, kept = re.search(pattern, msg).groups()
+        self.explored[-1] = explored
+        self.draw(kept)
+
     def update(self, msg, fmt, phase_name):
-
-        # exploration:
-        if 'keeps' in msg:
-            if msg.startswith(self.name + ' keeps'):
-                # Gamblng World triggered
-                self.draw(1)
-            else:
-                pattern = r'.+ draws (\d+) and keeps (\d+).'
-                explored, kept = re.search(pattern, msg).groups()
-                self.explored[-1] = explored
-                self.draw(kept)
-
-        # placement of cards:
-        elif 'places' in msg:
-            pattern = r'.+ places ([^.]+) at zero cost|.+ places (.+)\.'
-            match = re.search(pattern, msg)
-            placed = match.group(1) or match.group(2)
-            self.placed[-1].append(placed)
-            # Wormhole Prospectors places card from top of deck - no discard
-            # But Terraforming Project uses the same message and FROM HAND!!
-            worpro = '{0} flips {1}.'.format(self.name, placed)
-            if 'at zero cost' not in msg:
-                self.discard(1)
-            elif self.last_msg and worpro not in self.last_msg:
-                self.discard(1)
-
-        elif 'pays' in msg:
-            pattern = r'.+ pays (\d) (?:for|to conquer)'
-            paid = int(re.search(pattern, msg).group(1))
-
-            self.discard(paid)
-
-        # TODO: find a way to display BOTH number of cards gained and lost
-        # over the course of a phase.
-        elif 'from hand' in msg:
-            pattern = r'.+ consumes (\d) cards? from hand using'
-            consumed = int(re.search(pattern, msg).group(1))
-            self.discard(consumed)
-
-        # Cards discarded FROM TABLEAU (not from hand) can be distinguished
-        # by *lack* of format in the message.
-        elif 'discards' in msg and not fmt:
-            if 'good for extra military' in msg:
-                pass
-            elif 'at end of round' in msg:
-                pattern = r'.+ discards (\d) cards? at end of round'
-                discarded = int(re.search(pattern, msg).group(1))
-                self.discard(discarded)
-            elif 'to produce on' in msg:
-                self.discard(1)
-            else:
-                lost = re.search(r'.+ discards ([^.]+).', msg).group(1)
-                self.lost[-1].append(lost)
-
         # Wormhole Prospectors, e.g.
         # 'Green flips Replicant Robots.'
         # 'Green takes Replicant Robots into hand.'
-        elif msg.endswith('into hand.'):
+        if msg.endswith('into hand.'):
             self.draw(1)
-
-        # cards and VPs gained:
+        # Gambling World:
+        elif msg.startswith(self.name + ' keeps'):
+            self.draw(1)
+        elif 'keeps' in msg:
+            self._parse_exploration(msg)
+        elif 'places' in msg:
+            self._parse_placement(msg)
+        elif 'pays' in msg:
+            self._parse_payment(msg)
+        elif 'from hand' in msg:
+            self._parse_card_consumption(msg)
         elif 'receives' in msg:
-            cards = points = 0
-            if 'Explore' in msg:
-                return
-            # Sentient Robots, Scientific Cruisers are handled in
-            # Produce and Consume summary lines.
-            if 'from' in msg and phase_name not in ('Settle', 'Develop'):
-                return
-            elif phase_name in ('Develop', 'Settle'):
-                # Handles on-Settle bonus including Terraforming Robots,
-                # powers that make you draw on Develop, etc.
-                cards = re.search(r'receives (\d+) cards? from', msg).group(1)
-            elif 'VP' not in msg:
-                pattern = r'receives (\d+) cards? for (Produce|Consume) phase'
-                cards = re.search(pattern, msg).group(1)
-            elif 'card' not in msg:
-                pattern = r'.+ receives (\d+) VPs? for Consume phase.'
-                points = re.search(pattern, msg).group(1)
-            elif 'card' in msg and 'VP' in msg:
-                pattern = r'.+ receives (\d+) cards? and (\d+) VPs?'
-                cards, points = re.search(pattern, msg).groups()
-            self.draw(cards)
-            self.vp[-1] = int(points)
-        #TODO: solve the int/str issue once and for all
-
-        # production of goods:
+            self._parse_card_and_point_gain(msg, phase_name)
         elif 'produces on' in msg:
-            planet = re.search(r'.+ produces on (.+)\.', msg).group(1)
-            produced = self.card_data[planet]['goods']
-            self.produced[-1].append(produced)
+            self._parse_production(msg)
+        elif 'discards' in msg and not fmt:
+            self._parse_discard(msg)
         self.last_msg = msg
 
 
