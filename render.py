@@ -55,8 +55,9 @@ def render_bar_graph(players, phase_nr):
     with tag('ul', klass='bar-graph'):
         for player in reversed(sorted(players, key=lambda x: len(x.get_VP_bar(phase_nr)))):
             with tag('li'):
-                total = str(len(player.get_VP_bar(phase_nr)))
-                line('span', player.get_VP_bar(phase_nr) + ' ' + total, klass=player.get_color())
+                total = ' {0}'.format(str(len(player.get_VP_bar(phase_nr))))
+                line('span', player.get_VP_bar(phase_nr), klass=player.get_color())
+                text(total)
 
 
 def render_military(player, phase_nr):
@@ -77,7 +78,7 @@ def produce_report(game):
         with tag('meta'):
             doc.stag('link', rel="stylesheet", href="style.css")
         with tag('body'):
-            for rnd in game['rounds']:
+            for rnd in game.rounds:
                 title_id = 'title-{0}'.format(rnd.number)
                 line('h2', 'Round %s' % rnd.number, target=title_id)
                 parent_id = 'table-{0}'.format(rnd.number)
@@ -86,26 +87,26 @@ def produce_report(game):
                         with tag('td'):
                             line('a', 'Show bonuses', href='#' + parent_id)
                             line('a', 'Hide bonuses', klass='hidden', href='#' + title_id)
-                        render_cells(rnd.get_header(game['players']))
+                        render_cells(rnd.get_header(game.players))
                     with tag('tr', klass='hidden'):
                         line('td', 'phase bonuses')
-                        for pl in game['players']:
+                        for pl in game.players:
                             with tag('td'):
                                 render_military(pl, rnd.phases[0].nr)
                     for phase in rnd.phases:
                         with tag('tr'):
                             line('td', ROMAN[phase.name])
-                            for player in game['players']:
+                            for player in game.players:
                                 klass = ''
                                 if player.name in rnd.phase_played_by(phase):
                                     klass = player.get_color()
                                 with tag('td', klass=klass):
                                     render_changes(player.get_changes(phase.nr))
-                render_bar_graph(game['players'], phase.nr + 1)
+                render_bar_graph(game.players, phase.nr + 1)
                 vp_taken = 0
-                for player in game['players']:
+                for player in game.players:
                     vp_taken += len(player.get_VP_bar(phase.nr).strip('c?'))
-                vp_left = 12 * len(game['players']) - vp_taken
+                vp_left = 12 * len(game.players) - vp_taken
                 text('Tokens left: {0}'.format(vp_left))
 
 

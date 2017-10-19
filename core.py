@@ -123,7 +123,6 @@ class Player:
         variable = [c for c in tableau if self.card_data[c]['?_VP']]
         return sum(self.question_marks(card, tableau) for card in tableau)
 
-
     def get_VP_bar(self, phase_nr):
         for_cards = self.raw_tableau_VP(phase_nr) * 'c'
         for_tokens = sum(self.vp[:phase_nr]) * 'v'
@@ -145,12 +144,15 @@ class Player:
         points = '' if expl else ''
 
         content += ' '.join([expl, cards, points]).strip()
+        produced = [good[0] for good in self.produced[phase_nr]]
+        value = {'n': 1, 'r': 2, 'g': 3, 'a': 4}
+        produced.sort(key=lambda x: value[x])
 
         changes = {
                 'lost': lost,
                 'placed': placed,
                 'content': content,
-                'produced': [good[0] for good in self.produced[phase_nr]]
+                'produced': produced,
                 }
         return changes
     
@@ -172,7 +174,7 @@ class Player:
             self.discard(1)
         elif self.last_msg and worpro not in self.last_msg:
             self.discard(1)
-            
+
     def _parse_payment(self, msg):
         pattern = r'.+ pays (\d) (?:for|to conquer)'
         paid = int(re.search(pattern, msg).group(1))
@@ -316,7 +318,6 @@ class Round():
 
         return header
 
-
     # TODO: maybe a phase method?
     # Feature envy ?
     def phase_played_by(self, phase):
@@ -326,3 +327,22 @@ class Round():
             if phase.name == get_phase_name(ch[1]):
                 names.append(ch[0])
         return names
+
+
+class Game:
+    def __init__(self):
+        self.players = []
+        self.rounds = []
+
+    def prepare_players(self):
+        for player in self.players:
+            player.add_new_phase()
+
+    def update_player(self, msg, fmt, phase_name):
+        '''Finds the player the message concerns and makes him
+        update himself.'''
+        for player in self.players:
+            if msg.startswith(player.name):
+                player.update(msg, fmt, phase_name)
+                return
+
