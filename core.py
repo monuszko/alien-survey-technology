@@ -333,6 +333,7 @@ class Game:
     def __init__(self):
         self.players = []
         self.rounds = []
+        self.information = []
 
     def prepare_players(self):
         for player in self.players:

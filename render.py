@@ -78,6 +78,9 @@ def produce_report(game):
         with tag('meta'):
             doc.stag('link', rel="stylesheet", href="style.css")
         with tag('body'):
+            with tag('ul'):
+                for message in game.information:
+                    line('li', message)
             for rnd in game.rounds:
                 title_id = 'title-{0}'.format(rnd.number)
                 line('h2', 'Round %s' % rnd.number, target=title_id)

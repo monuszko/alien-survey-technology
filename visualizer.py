@@ -46,5 +46,12 @@ while 'End of game' not in msg:
     round_nr += 1
 
 
+while 'Game information' not in msg:
+    msg = messages.pop(0)[0]
+
+for x in range(3):
+    game.information.append(messages.pop(0)[0])
+
+
 produce_report(game)
 
