@@ -108,7 +108,7 @@ class Player:
             total += self.vp_from_rewards(c, award_list)
         for req, award in award_list:
             if req == {'THREE_VP'}:
-                total += self.numbers['VP']//3
+                total += sum(self.vp)//3
             elif req == {'TOTAL_MILITARY'}:
                 total += self.get_military()[0][1]
             elif req == {'NEGATIVE_MILITARY'}:
@@ -141,7 +141,6 @@ class Player:
         cards = '' if not cards else '+%scards' % cards
         points = self.vp[phase_nr]
         points = '' if not points else '+%spoints' % points
-        points = '' if expl else ''
 
         content += ' '.join([expl, cards, points]).strip()
         produced = [good[0] for good in self.produced[phase_nr]]
