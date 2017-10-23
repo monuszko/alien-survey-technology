@@ -131,18 +131,16 @@ class Player:
 
     def get_changes(self, phase_nr):
         '''Renders changes to player that happened within current round.'''
-        content = ''
 
         expl = self.explored[phase_nr]
-        expl = '' if not expl else str(expl)
         lost = ', '.join(self.lost[phase_nr]) if self.lost[phase_nr] else ''
         placed = ', '.join(self.placed[phase_nr]) if self.placed[phase_nr] else ''
         cards = sum(int(c) for c in self.hand[phase_nr] if int(c) > 0)
-        cards = '' if not cards else '+%scards' % cards
+        cards = '' if not cards else str(cards)
         points = self.vp[phase_nr]
         points = '' if not points else '+%spoints' % points
 
-        content += ' '.join([expl, cards, points]).strip()
+
         produced = [good[0] for good in self.produced[phase_nr]]
         value = {'n': 1, 'r': 2, 'g': 3, 'a': 4}
         produced.sort(key=lambda x: value[x])
@@ -150,8 +148,10 @@ class Player:
         changes = {
                 'lost': lost,
                 'placed': placed,
-                'content': content,
                 'produced': produced,
+                'cards': cards,
+                'explored': expl,
+                'points': points,
                 }
         return changes
     

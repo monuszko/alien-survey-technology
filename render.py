@@ -1,7 +1,10 @@
 from yattag import Doc, indent
+from xml.etree import ElementTree as et
 
+SVG_NS = 'http://www.w3.org/2000/svg'
+et.register_namespace('', SVG_NS)
 
-doc, tag, text, line= Doc().ttl()
+doc, tag, text, line = Doc().ttl()
 
 
 ROMAN = {
@@ -11,6 +14,14 @@ ROMAN = {
     'Consume': 'IV',
     'Produce': 'V'
 }
+
+
+def get_svg(icon, replacements):
+    svg = et.parse(icon)
+    for ide, repl in replacements.items():
+        node = svg.find(".//{%s}text[@id='%s']" % (SVG_NS, ide))
+        node.text = repl
+    return et.tostring(svg.getroot(), encoding='unicode')
 
 
 def render_cells(cells):
@@ -32,17 +43,20 @@ def render_cells(cells):
 
 
 def render_changes(changes):
-    changed = any(changes[ch] for ch in ('lost', 'placed', 'content', 'produced'))
+    changed = any(changes[ch] for ch in ('lost', 'placed', 'cards', 'points', 'explored', 'produced'))
     if not changed:
         return
 
     with tag('ul'):
         if changes['lost']:
             line('li', changes['lost'], klass='strike')
-        if changes['placed']:
-            line('li', changes['placed'])
-        if changes['content']:
-            line('li', changes['content'])
+        for key in ('placed', 'explored', 'points'):
+            if changes[key]:
+                line('li', changes[key])
+        if changes['cards']:
+            as_str = get_svg('svg/card.svg', {'cards': changes['cards']})
+            doc.asis(as_str)
+
 
     for group in changes['produced']:
         kl = {'n': 'novelty', 'r': 'rare', 'g': 'gene', 'a': 'alien'}[group[0]]

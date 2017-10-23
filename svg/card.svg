@@ -17,5 +17,5 @@
          L 27 15
          A 10 5 0 0 1 27 21
          L 20 21 Z" stroke="black" fill="white"/>
-<text x="21" y="36">+1</text>
+<text id="cards" x="21" y="36">+1</text>
 </svg>
