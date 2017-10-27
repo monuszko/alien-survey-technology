@@ -87,3 +87,8 @@ ul {
 :target a:not(.hidden) {
     display: none;
 }
+
+.icon {
+    width: 50;
+    height: 50;
+}

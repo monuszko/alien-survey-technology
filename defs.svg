@@ -1,0 +1,91 @@
+<svg version="1.1"
+     baseProfile="full"
+     xmlns="http://www.w3.org/2000/svg"
+>
+
+<symbol id="card" viewBox="0 0 46 48">
+<title>Card</title>
+<desc>Number of drawn cards</desc>
+
+<g stroke="black" fill="white">
+<rect x="6" y="0" rx="5" ry="5" width="32" height="48" />
+<rect x="32" y="14" rx="3" ry="3" width="12" height="6" />
+<rect x="32" y="20" rx="3" ry="3" width="12" height="6" />
+<rect x="32" y="26" rx="3" ry="3" width="12" height="6" />
+<rect x="32" y="32" rx="3" ry="3" width="12" height="6" />
+</g>
+
+<path d="M6 43 
+         A 6 6 0 0 1 0 37
+         L 0 16
+         A 6 6 0 0 1 6 10
+         L 13 10
+         A 10 5 0 0 1 13 16
+         L 6 16 Z" stroke="black" fill="white"/>
+</symbol>
+
+<symbol id="explore">
+  <path d="M10 50 
+           A 60 80 0 0 0 90 50 
+           A 60 80 0 0 0 10 50
+           z" fill="grey" stroke="black" stroke-linejoin="round" />
+  <circle cx="50" cy="50" r="20" stroke="black" fill="white" />
+</symbol>
+
+<!-- Passing params to SVG is in spec, but not implemented by browsers.
+     Another option was to parse SVG with ElementTree, replace the number
+     and embed inline SVG into document. A pattern with text used as fill
+     won't work, because patterns can only include *basic* shapes.
+     So far the best compromise is to put two SVG symbols on top of each other,
+     one for symbol and one for number. Fortunatelly, color fills can be
+     accomplished with patterns and CSS styles. -->
+
+<symbol id="number-1" viewBox="0 0 40 40">
+<text x='15' y='27' font-size='20'>1</text>
+</symbol>
+
+<symbol id="number-2" viewBox="0 0 40 40">
+<text x='15' y='27' font-size='20'>2</text>
+</symbol>
+
+<symbol id="number-3" viewBox="0 0 40 40">
+<text x='15' y='27' font-size='20'>3</text>
+</symbol>
+
+<symbol id="number-4" viewBox="0 0 40 40">
+<text x='15' y='27' font-size='20'>4</text>
+</symbol>
+
+<symbol id="number-5" viewBox="0 0 40 40">
+<text x='15' y='27' font-size='20'>5</text>
+</symbol>
+
+<symbol id="number-6" viewBox="0 0 40 40">
+<text x='15' y='27' font-size='20'>6</text>
+</symbol>
+
+<symbol id="number-7" viewBox="0 0 40 40">
+<text x='15' y='27' font-size='20'>7</text>
+</symbol>
+
+<symbol id="number-8" viewBox="0 0 40 40">
+<text x='15' y='27' font-size='20'>8</text>
+</symbol>
+
+<symbol id="number-9" viewBox="0 0 40 40">
+<text x='15' y='27' font-size='20'>9</text>
+</symbol>
+
+<symbol id="number-10" viewBox="0 0 40 40">
+<text x='12' y='30' font-size='20'>10</text>
+</symbol>
+
+<symbol id="number-11" viewBox="0 0 40 40">
+<text x='12' y='30' font-size='20'>11</text>
+</symbol>
+
+<symbol id="number-12" viewBox="0 0 50 50">
+<text x='12' y='30' font-size='20'>12</text>
+</symbol>
+
+</svg>

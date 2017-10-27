@@ -1,8 +1,4 @@
 from yattag import Doc, indent
-from xml.etree import ElementTree as et
-
-SVG_NS = 'http://www.w3.org/2000/svg'
-et.register_namespace('', SVG_NS)
 
 doc, tag, text, line = Doc().ttl()
 
@@ -14,14 +10,6 @@ ROMAN = {
     'Consume': 'IV',
     'Produce': 'V'
 }
-
-
-def get_svg(icon, replacements):
-    svg = et.parse(icon)
-    for ide, repl in replacements.items():
-        node = svg.find(".//{%s}text[@id='%s']" % (SVG_NS, ide))
-        node.text = repl
-    return et.tostring(svg.getroot(), encoding='unicode')
 
 
 def render_cells(cells):
@@ -54,8 +42,11 @@ def render_changes(changes):
             if changes[key]:
                 line('li', changes[key])
         if changes['cards']:
-            as_str = get_svg('svg/card.svg', {'cards': changes['cards']})
-            doc.asis(as_str)
+            with tag('svg', klass="icon"):
+                doc.stag('use', ('xlink:href', '#card'),
+                        klass="cards-%s" % changes['cards'])
+                doc.stag('use', ('xlink:href', '#number-%s' % changes['cards']),
+                        )
 
 
     for group in changes['produced']:
@@ -92,6 +83,7 @@ def produce_report(game):
         with tag('meta'):
             doc.stag('link', rel="stylesheet", href="style.css")
         with tag('body'):
+            doc.asis('\n'.join(open('defs.svg', 'r').readlines()))
             with tag('ul'):
                 for message in game.information:
                     line('li', message)
