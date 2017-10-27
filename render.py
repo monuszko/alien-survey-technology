@@ -43,16 +43,17 @@ def render_changes(changes):
                 line('li', changes[key])
         if changes['cards']:
             with tag('svg', klass="icon"):
-                doc.stag('use', ('xlink:href', '#card'),
-                        klass="cards-%s" % changes['cards'])
+                doc.stag('use', ('xlink:href', '#card'))
                 doc.stag('use', ('xlink:href', '#number-%s' % changes['cards']),
                         )
 
+    #TODO: Find an elegant way to put all cards inside ONE <svg></svg> tag.
+    # <param> would do the trick, but it's not implemented yet.
+    if changes['produced']:
+        for good in changes['produced']:
+            with tag('svg', klass="icon"):
+                doc.stag('use', ('xlink:href', '#good'), klass=good)
 
-    for group in changes['produced']:
-        kl = {'n': 'novelty', 'r': 'rare', 'g': 'gene', 'a': 'alien'}[group[0]]
-        with tag('span', klass=kl):
-            text('#' * len(group))
 
 
 #BUG: displays info from the start of the used phase, not end of round

@@ -141,8 +141,8 @@ class Player:
         points = '' if not points else '+%spoints' % points
 
 
-        produced = [good[0] for good in self.produced[phase_nr]]
-        value = {'n': 1, 'r': 2, 'g': 3, 'a': 4}
+        produced = [good for good in self.produced[phase_nr]]
+        value = {'novelty': 1, 'rare': 2, 'gene': 3, 'alien': 4}
         produced.sort(key=lambda x: value[x])
 
         changes = {

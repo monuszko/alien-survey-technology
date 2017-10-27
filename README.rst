@@ -60,11 +60,24 @@ first arc. It would be best if someone familiar with it sent a patch.
 Future plans
 ------------
 
-* ``.svg`` symbols to replace as much text as possible ! True to *RftG* spirit.
+* more ``.svg`` symbols.
 * more graphs
 * more control over which log is opened and where reports are saved.
 * aggregate summary of player bonuses for each round. For sum of ``I`` bonuses,
   ``II``, ``III``, ``IV`` and ``V`` bonuses from all cards in the tableau.
+
+
+Contributing
+------------
+
+SVG Tutorial:
+https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial
+
+Icon System with SVG Sprites:
+https://css-tricks.com/svg-sprites-use-better-icon-fonts/
+
+Styling SVG <use> Content with CSS:
+https://tympanus.net/codrops/2015/07/16/styling-svg-use-content-css/
 
 Author
 ------

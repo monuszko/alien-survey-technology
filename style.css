@@ -47,21 +47,21 @@ ul {
 }
 
 
-.alien {
-    background-color: #fef200;
+svg .alien {
+    fill: #fef200;
 }
 
 
-.rare {
-    background-color: #dba567;
+svg .rare {
+    fill: #dba567;
 }
 
-.gene {
-    background-color: #80cd2b;
+svg .gene {
+    fill: #80cd2b;
 }
 
-.novelty {
-    background-color: #80d6f7;
+svg .novelty {
+    fill: #80d6f7;
 }
 
 .military {
@@ -92,3 +92,4 @@ ul {
     width: 50;
     height: 50;
 }
+

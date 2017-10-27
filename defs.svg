@@ -24,6 +24,10 @@
          L 6 16 Z" stroke="black" fill="white"/>
 </symbol>
 
+<symbol id="good" viewBox="0 0 46 48">
+    <rect class="colorized" x="6" y="0" rx="5" ry="5" width="32" height="48" stroke="black" />
+</symbol>
+
 <symbol id="explore">
   <path d="M10 50 
            A 60 80 0 0 0 90 50 
@@ -76,11 +80,11 @@
 <text x='15' y='27' font-size='20'>9</text>
 </symbol>
 
-<symbol id="number-10" viewBox="0 0 40 40">
+<symbol id="number-10" viewBox="0 0 50 50">
 <text x='12' y='30' font-size='20'>10</text>
 </symbol>
 
-<symbol id="number-11" viewBox="0 0 40 40">
+<symbol id="number-11" viewBox="0 0 50 50">
 <text x='12' y='30' font-size='20'>11</text>
 </symbol>
 
