@@ -138,7 +138,7 @@ class Player:
         cards = sum(int(c) for c in self.hand[phase_nr] if int(c) > 0)
         cards = '' if not cards else str(cards)
         points = self.vp[phase_nr]
-        points = '' if not points else '+%spoints' % points
+        points = '' if not points else points
 
 
         produced = [good for good in self.produced[phase_nr]]

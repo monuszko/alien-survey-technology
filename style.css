@@ -46,11 +46,9 @@ ul {
     font-weight: bold;
 }
 
-
 svg .alien {
     fill: #fef200;
 }
-
 
 svg .rare {
     fill: #dba567;
@@ -62,6 +60,22 @@ svg .gene {
 
 svg .novelty {
     fill: #80d6f7;
+}
+
+svg .empty {
+    fill: inherit;
+}
+
+use.hexagon-1 {
+    fill: url(#one-vp);
+}
+
+use.hexagon-5 {
+    fill: url(#five-vp);
+}
+
+use.hexagon-10 {
+    fill: url(#ten-vp);
 }
 
 .military {
@@ -89,7 +103,8 @@ svg .novelty {
 }
 
 .icon {
-    width: 50;
-    height: 50;
+    width: 1.5em;
+    height: 1.5em;
 }
+
 

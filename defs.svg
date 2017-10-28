@@ -2,6 +2,103 @@
      baseProfile="full"
      xmlns="http://www.w3.org/2000/svg"
 >
+<defs>
+
+
+
+<pattern id="one-vp" width="1.0" height="1.0">
+    <line x1="150" y1="50"
+          x2="150" y2="210"
+          stroke="white" stroke-width="40"/>
+</pattern>
+
+
+<!-- Okay, so apparently <use> doesn't allow overriding attributes
+     inside <pattern>. Boo !! -->
+<pattern id="five-vp" width="1.0" height="1.0">
+    <line x1="150" y1="0"
+          x2="150" y2="60"
+          stroke="white" stroke-width="30"/>
+
+
+    <line x1="150" y1="0"
+          x2="150" y2="60"
+          stroke="white" stroke-width="30"
+          transform="rotate(120, 150, 130) translate(30, 0)" />
+
+    <line x1="150" y1="0"
+          x2="150" y2="60"
+          stroke="white" stroke-width="30"
+          transform="rotate(120, 150, 130) translate(-30, 0)" />
+
+
+    <line x1="150" y1="0"
+          x2="150" y2="60"
+          stroke="white" stroke-width="30"
+          transform="rotate(240, 150, 130) translate(30, 0)" />
+
+    <line x1="150" y1="0"
+          x2="150" y2="60"
+          stroke="white" stroke-width="30"
+          transform="rotate(240, 150, 130) translate(-30, 0)" />
+</pattern>
+
+<pattern id="ten-vp" width="1.0" height="1.0">
+    <line x1="150" y1="0"
+          x2="150" y2="45"
+          stroke="white" stroke-width="30"/>
+
+    <line x1="150" y1="0"
+          x2="150" y2="45"
+          stroke="white" stroke-width="30"
+          transform="rotate(180, 150, 130)" />
+
+
+    <line x1="150" y1="0"
+          x2="150" y2="45"
+          stroke="white" stroke-width="30"
+          transform="rotate(60, 150, 130) translate(30, 0)" />
+
+    <line x1="150" y1="0"
+          x2="150" y2="45"
+          stroke="white" stroke-width="30"
+          transform="rotate(60, 150, 130) translate(-30, 0)" />
+
+
+    <line x1="150" y1="0"
+          x2="150" y2="45"
+          stroke="white" stroke-width="30"
+          transform="rotate(120, 150, 130) translate(30, 0)" />
+
+    <line x1="150" y1="0"
+          x2="150" y2="45"
+          stroke="white" stroke-width="30"
+          transform="rotate(120, 150, 130) translate(-30, 0)" />
+
+
+    <line x1="150" y1="0"
+          x2="150" y2="45"
+          stroke="white" stroke-width="30"
+          transform="rotate(240, 150, 130) translate(30, 0)" />
+
+    <line x1="150" y1="0"
+          x2="150" y2="45"
+          stroke="white" stroke-width="30"
+          transform="rotate(240, 150, 130) translate(-30, 0)" />
+
+
+    <line x1="150" y1="0"
+          x2="150" y2="45"
+          stroke="white" stroke-width="30"
+          transform="rotate(300, 150, 130) translate(30, 0)" />
+
+    <line x1="150" y1="0"
+          x2="150" y2="45"
+          stroke="white" stroke-width="30"
+          transform="rotate(300, 150, 130) translate(-30, 0)" />
+</pattern>
+
+</defs>
 
 <symbol id="card" viewBox="0 0 46 48">
 <title>Card</title>
@@ -25,7 +122,14 @@
 </symbol>
 
 <symbol id="good" viewBox="0 0 46 48">
-    <rect class="colorized" x="6" y="0" rx="5" ry="5" width="32" height="48" stroke="black" />
+    <rect class="empty" x="6" y="0" rx="5" ry="5" width="32" height="48" stroke="black" />
+</symbol>
+
+<symbol id="hexagon" viewBox="0 0 300 300">
+  <polygon id="bg"
+           points="300,150 225,280 75,280 0,150 75,20 225,20"
+           fill="navy"/>
+  <polygon class="empty" points="300,150 225,280 75,280 0,150 75,20 225,20" />
 </symbol>
 
 <symbol id="explore">

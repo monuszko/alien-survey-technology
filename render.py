@@ -29,6 +29,17 @@ def render_cells(cells):
                     for row in cell[1]:
                         line('li', row)
 
+def as_tokens(points):
+    tokens = []
+    points = int(points)
+    while points:
+        for token in (10, 5, 1):
+            if token <= points:
+                tokens.append(token)
+                points -= token
+                break
+    return tokens
+
 
 def render_changes(changes):
     changed = any(changes[ch] for ch in ('lost', 'placed', 'cards', 'points', 'explored', 'produced'))
@@ -38,9 +49,13 @@ def render_changes(changes):
     with tag('ul'):
         if changes['lost']:
             line('li', changes['lost'], klass='strike')
-        for key in ('placed', 'explored', 'points'):
+        for key in ('placed', 'explored'):
             if changes[key]:
                 line('li', changes[key])
+        if changes['points']:
+            for token in as_tokens(changes['points']):
+                with tag('svg', klass="icon"):
+                    doc.stag('use', ('xlink:href', '#hexagon'), klass='hexagon-%s' % token)
         if changes['cards']:
             with tag('svg', klass="icon"):
                 doc.stag('use', ('xlink:href', '#card'))
