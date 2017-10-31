@@ -42,33 +42,42 @@ def as_tokens(points):
 
 
 def render_changes(changes):
-    changed = any(changes[ch] for ch in ('lost', 'placed', 'cards', 'points', 'explored', 'produced'))
-    if not changed:
+    if not any(ch for ch in changes.values()):
         return
 
     with tag('ul'):
+        if changes['explored']:
+            with tag('svg', klass="long-icon"):
+                with tag('g', transform="scale(0.75)"):
+                    doc.stag('use', ('xlink:href', '#explore'))
+                    text_id = '#number-%s' % changes['explored']
+                    doc.stag('use', ('xlink:href', text_id))
+
+                    doc.stag('use', ('xlink:href', '#card'), x=23)
+                    text_id = '#number-%s' % changes['cards']
+                    doc.stag('use', ('xlink:href', text_id), x=23)
         if changes['lost']:
             line('li', changes['lost'], klass='strike')
-        for key in ('placed', 'explored'):
-            if changes[key]:
-                line('li', changes[key])
+        if changes['placed']:
+            line('li', changes['placed'])
         if changes['points']:
             for token in as_tokens(changes['points']):
                 with tag('svg', klass="icon"):
-                    doc.stag('use', ('xlink:href', '#hexagon'), klass='hexagon-%s' % token)
-        if changes['cards']:
+                    symbol_id = 'hexagon-%s' % token
+                    doc.stag('use', ('xlink:href', '#hexagon'), klass=symbol_id)
+        if changes['cards'] and not changes['explored']:
             with tag('svg', klass="icon"):
                 doc.stag('use', ('xlink:href', '#card'))
                 doc.stag('use', ('xlink:href', '#number-%s' % changes['cards']),
                         )
 
-    #TODO: Find an elegant way to put all cards inside ONE <svg></svg> tag.
-    # <param> would do the trick, but it's not implemented yet.
+    # Putting a couple of icons inside a single <svg> tag is more trouble than
+    # it's worth. Probably the cleanest way is --icon-width CSS variable
+    # and using translate on subsequent icons.
     if changes['produced']:
         for good in changes['produced']:
             with tag('svg', klass="icon"):
                 doc.stag('use', ('xlink:href', '#good'), klass=good)
-
 
 
 #BUG: displays info from the start of the used phase, not end of round

@@ -4,14 +4,11 @@
 >
 <defs>
 
-
-
 <pattern id="one-vp" width="1.0" height="1.0">
     <line x1="150" y1="50"
           x2="150" y2="210"
           stroke="white" stroke-width="40"/>
 </pattern>
-
 
 <!-- Okay, so apparently <use> doesn't allow overriding attributes
      inside <pattern>. Boo !! -->
@@ -132,12 +129,12 @@
   <polygon class="empty" points="300,150 225,280 75,280 0,150 75,20 225,20" />
 </symbol>
 
-<symbol id="explore">
-  <path d="M10 50 
-           A 60 80 0 0 0 90 50 
-           A 60 80 0 0 0 10 50
+<symbol id="explore" viewBox="0 0 80 40">
+  <path d="M0 20
+           A 60 80 0 0 0 80 20
+           A 60 80 0 0 0 0 20
            z" fill="grey" stroke="black" stroke-linejoin="round" />
-  <circle cx="50" cy="50" r="20" stroke="black" fill="white" />
+  <circle cx="40" cy="20" r="20" stroke="black" fill="white" />
 </symbol>
 
 <!-- Passing params to SVG is in spec, but not implemented by browsers.

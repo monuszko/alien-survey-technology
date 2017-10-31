@@ -73,6 +73,9 @@ Contributing
 SVG Tutorial:
 https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial
 
+SVG reuse:
+http://vanseodesign.com/web-design/svg-definition-reuse/
+
 Icon System with SVG Sprites:
 https://css-tricks.com/svg-sprites-use-better-icon-fonts/
 
