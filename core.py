@@ -50,7 +50,7 @@ class Player:
     def tableau(self, phase_nr):
         # It would be tempting to just add and remove to a set, but that
         # would remove the ability to query for specific phases or ranges.
-        tableau = [c for c in chain.from_iterable(self.placed[:phase_nr])]
+        tableau = list(chain.from_iterable(self.placed[:phase_nr]))
         for l in chain.from_iterable(self.lost[:phase_nr]):
             tableau.remove(l)
         return tableau
@@ -133,15 +133,13 @@ class Player:
         '''Renders changes to player that happened within current round.'''
 
         expl = self.explored[phase_nr]
-        lost = ', '.join(self.lost[phase_nr]) if self.lost[phase_nr] else ''
-        placed = ', '.join(self.placed[phase_nr]) if self.placed[phase_nr] else ''
+        lost = ', '.join(self.lost[phase_nr])
+        placed = ', '.join(self.placed[phase_nr])
         cards = sum(int(c) for c in self.hand[phase_nr] if int(c) > 0)
         cards = '' if not cards else str(cards)
         points = self.vp[phase_nr]
-        points = '' if not points else points
 
-
-        produced = [good for good in self.produced[phase_nr]]
+        produced = self.produced[phase_nr]
         value = {'novelty': 1, 'rare': 2, 'gene': 3, 'alien': 4}
         produced.sort(key=lambda x: value[x])
 

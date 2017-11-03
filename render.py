@@ -42,7 +42,7 @@ def as_tokens(points):
 
 
 def render_changes(changes):
-    if not any(ch for ch in changes.values()):
+    if not any(changes.values()):
         return
 
     with tag('ul'):
@@ -96,7 +96,7 @@ def render_military(player, phase_nr):
         always = str(always)
         potential = str(potential)
         with tag('span', klass='military ' + target):
-            sign = '+' if int(always) >= 0 else '-'
+            sign = '+' if int(always) else '-'
             tmp = '({0}{1})'.format(sign, always)
             if potential > always:
                 tmp = tmp.replace(always, always + '/' + potential)
