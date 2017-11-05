@@ -35,7 +35,7 @@ class Player:
         # Therefore no need for list.
         self.vp = [0]
         self.produced = [[]]
-        self.last_msg = None
+        self.special = set()
 
         self.card_data = card_data
 
@@ -47,7 +47,7 @@ class Player:
         self.vp.append(0)
         self.produced.append([])
 
-    def tableau(self, phase_nr):
+    def get_tableau(self, phase_nr):
         # It would be tempting to just add and remove to a set, but that
         # would remove the ability to query for specific phases or ranges.
         tableau = list(chain.from_iterable(self.placed[:phase_nr]))
@@ -64,16 +64,16 @@ class Player:
         color = self.name.lower() if self.name.lower() in colors else 'blue'
         return color
 
-    def get_military(self, phase_nr):
+    def get_military(self, tableau):
         tmp = []
 
         always = extra = 0
-        for card in self.tableau(phase_nr):
+        for card in tableau:
             always += self.card_data[card]['military']['normal']
             extra += self.card_data[card]['military']['potential_normal']
         tmp.append(('normal', always, always+extra))
 
-        for card in self.tableau(phase_nr):
+        for card in tableau:
             for target in ('novelty', 'rare', 'gene', 'alien', 'rebel', 'xeno'):
                 always = extra = 0
                 always = self.card_data[card]['military'].get(target, 0)
@@ -85,7 +85,8 @@ class Player:
 
     def raw_tableau_VP(self, phase_nr):
         '''Return total VP value of tableau without 6-devs'''
-        return sum(self.card_data[card]['raw_VP'] for card in self.tableau(phase_nr))
+        return sum(self.card_data[card]['raw_VP']
+                                        for card in self.get_tableau(phase_nr))
 
     #TODO: begs for refactoring
     def vp_from_rewards(self, card, awards):
@@ -110,16 +111,16 @@ class Player:
             if req == {'THREE_VP'}:
                 total += sum(self.vp)//3
             elif req == {'TOTAL_MILITARY'}:
-                total += self.get_military()[0][1]
+                total += self.get_military(tableau)[0][1]
             elif req == {'NEGATIVE_MILITARY'}:
-                military = self.get_military()[0][1]
+                military = self.get_military(tableau)[0][1]
                 total += abs(min(military, 0))
         return total
 
     def tableau_question_marks(self, phase_nr):
         '''Return the total VP for all variable VP cards in tableau.'''
         total = 0
-        tableau = self.tableau(phase_nr)
+        tableau = self.get_tableau(phase_nr)
         variable = [c for c in tableau if self.card_data[c]['?_VP']]
         return sum(self.question_marks(card, tableau) for card in tableau)
 
@@ -166,11 +167,13 @@ class Player:
         self.placed[-1].append(placed)
         # Wormhole Prospectors places card from top of deck - no discard
         # But Terraforming Project uses the same message and FROM HAND!!
-        worpro = '{0} flips {1}.'.format(self.name, placed)
         if 'at zero cost' not in msg:
             self.discard(1)
-        elif self.last_msg and worpro not in self.last_msg:
+        elif 'wormhole_prospectors' not in self.special:
             self.discard(1)
+        else:
+            self.special.remove('wormhole_prospectors')
+
 
     def _parse_payment(self, msg):
         pattern = r'.+ pays (\d) (?:for|to conquer)'
@@ -258,7 +261,8 @@ class Player:
             self._parse_production(msg)
         elif 'discards' in msg and not fmt:
             self._parse_discard(msg)
-        self.last_msg = msg
+        elif 'flips' in msg:
+            self.special.add('wormhole_prospectors')
 
 
 class Phase:
@@ -294,7 +298,7 @@ class Round():
         header = []
 
         for player in players:
-            tab = '#' * len(player.tableau(first_phase.nr))
+            tab = '#' * len(player.get_tableau(first_phase.nr))
             # Split tableau into groups of 4 because humans can't naturally
             # perceive amounts higher than 4.
             choices = (ch[1] for ch in self.choices if ch[0] == player.name)

@@ -91,12 +91,12 @@ def render_bar_graph(players, phase_nr):
 
 
 def render_military(player, phase_nr):
-    for l in player.get_military(phase_nr):
+    for l in player.get_military(player.get_tableau(phase_nr)):
         target, always, potential = l
         always = str(always)
         potential = str(potential)
         with tag('span', klass='military ' + target):
-            sign = '+' if int(always) else '-'
+            sign = '+' if int(always) > 0 else '-'
             tmp = '({0}{1})'.format(sign, always)
             if potential > always:
                 tmp = tmp.replace(always, always + '/' + potential)
