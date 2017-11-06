@@ -17,6 +17,8 @@ def _parse_card_header(line, card):
     card['raw_VP'] = vp
     card['cost'] = cost
     card['flags'].add('WORLD' if card_type == '1' else 'DEVEL')
+    if 'WORLD' in card['flags']:
+        card['flags'].add('NONMILITARY')
     if card['cost'] == 6:
         card['flags'].add('SIX')
 
@@ -32,8 +34,8 @@ def _parse_goods(line, card):
 def _parse_flags(line, card):
     flags = line[2:].split('|')
     card['flags'] |= {flag.strip() for flag in flags}
-    if card['flags'] & {'WORLD', 'MILITARY'} == {'WORLD'}:
-        card['flags'].add('NONMILITARY')
+    if 'MILITARY' in card['flags']:
+        card['flags'].remove('NONMILITARY')
     if 'WINDFALL' in card['flags']:
         card['flags'].remove('PRODUCTION')
 

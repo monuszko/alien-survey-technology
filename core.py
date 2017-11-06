@@ -239,11 +239,9 @@ class Player:
         self.draw(kept)
 
     def update(self, msg, fmt, phase_name):
-        # Wormhole Prospectors, e.g.
-        # 'Green flips Replicant Robots.'
-        # 'Green takes Replicant Robots into hand.'
         if msg.endswith('into hand.'):
             self.draw(1)
+            self.special.remove('wormhole_prospectors')
         # Gambling World:
         elif msg.startswith(self.name + ' keeps'):
             self.draw(1)
