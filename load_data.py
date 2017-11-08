@@ -16,9 +16,10 @@ def _parse_card_header(line, card):
     cost, vp = int(cost), int(vp)
     card['raw_VP'] = vp
     card['cost'] = cost
-    card['flags'].add('WORLD' if card_type == '1' else 'DEVEL')
-    if 'WORLD' in card['flags']:
-        card['flags'].add('NONMILITARY')
+    if card_type == '1':
+        card['flags'] |= {'WORLD', 'NONMILITARY'}
+    else:
+        card['flags'].add('DEVEL')
     if card['cost'] == 6:
         card['flags'].add('SIX')
 
@@ -28,7 +29,7 @@ def _parse_goods(line, card):
     card['goods'] = goods.lower()
     # This assumes too much, but you can't know for sure without
     # reading the optional F: (flags) line, which comes *later*.
-    card['flags'] |= {goods, 'PRODUCTION', 'NONMILITARY'}
+    card['flags'] |= {goods, 'PRODUCTION'}
 
 
 def _parse_flags(line, card):
@@ -67,8 +68,12 @@ def _parse_settle_phase(line, card):
             break
         target = 'normal'
     target = target if target != 'against_rebel' else 'rebel'
-    key = ('' if not potential else 'potential_') + target
-    card['military'][key] = bonus
+    if target not in card['military']:
+        card['military'][target] = [0, 0]
+    if not potential:
+        card['military'][target][0] += bonus
+    else:
+        card['military'][target][1] += bonus
 
 
 def _parse_consume_phase(line, card):

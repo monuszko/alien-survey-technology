@@ -65,23 +65,36 @@ class Player:
         return color
 
     def get_military(self, tableau):
-        tmp = []
+        """
+        Returns a list of military strengths for each type of target
+        including 'normal'. Each element is:
 
-        always = extra = 0
-        for card in tableau:
-            always += self.card_data[card]['military']['normal']
-            extra += self.card_data[card]['military']['potential_normal']
-        tmp.append(('normal', always, always+extra))
+        [target_name, min_str, max_str]
+
+        where min_str is always available and max_str is total possible
+        strength including temporary bonuses."""
+
+        targets = ('novelty', 'rare', 'gene', 'alien', 'rebel', 'xeno')
+        result = []
+        tmp = {target: [0, 0] for target in targets}
+        tmp['normal'] = [0, 0]
 
         for card in tableau:
-            for target in ('novelty', 'rare', 'gene', 'alien', 'rebel', 'xeno'):
-                always = extra = 0
-                always = self.card_data[card]['military'].get(target, 0)
-                extra = self.card_data[card]['military'].get('potential_' + target, 0)
-                if not (always or extra):
-                    continue
-                tmp.append((target, always + tmp[0][1], always+extra + tmp[0][2]))
-        return tmp
+            for target, bonuses in self.card_data[card]['military'].items():
+                tmp[target][0] += bonuses[0]
+                tmp[target][1] += bonuses[1]
+
+        min_str = tmp['normal'][0]
+        max_str = min_str + tmp['normal'][1]
+        result.append(('normal', min_str, max_str))
+
+        tmp = {k: v for k, v in tmp.items() if any(v)}
+        for targ in targets:
+            if targ in tmp:
+                min_vs_target = tmp['normal'][0] + tmp[targ][0]
+                max_vs_target = min_vs_target + tmp['normal'][1] + tmp[targ][1]
+                result.append((targ, min_vs_target, max_vs_target))
+        return result
 
     def raw_tableau_VP(self, phase_nr):
         '''Return total VP value of tableau without 6-devs'''

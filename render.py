@@ -92,14 +92,14 @@ def render_bar_graph(players, phase_nr):
 
 def render_military(player, phase_nr):
     for l in player.get_military(player.get_tableau(phase_nr)):
-        target, always, potential = l
-        always = str(always)
-        potential = str(potential)
+        target, min_str, max_str = l
+        min_str = str(min_str)
+        max_str = str(max_str)
         with tag('span', klass='military ' + target):
-            sign = '+' if int(always) > 0 else '-'
-            tmp = '({0}{1})'.format(sign, always)
-            if potential > always:
-                tmp = tmp.replace(always, always + '/' + potential)
+            plus = '+' if int(min_str) >= 0 else ''
+            tmp = '({0}{1})'.format(plus, min_str)
+            if max_str > min_str:
+                tmp = tmp.replace(min_str, min_str + '/' + max_str)
             text(tmp)
 
 

@@ -1,3 +1,10 @@
+:root {
+    --novelty-color: #80d6f7;
+    --rare-color: #dba567;
+    --gene-color: #80cd2b;
+    --alien-color: #fef200;
+}
+
 table {
     border: 1px solid purple;
     border-color: gray;
@@ -46,20 +53,24 @@ ul {
     font-weight: bold;
 }
 
-svg .alien {
-    fill: #fef200;
+.alien {
+    background-color: var(--alien-color);
+    fill: var(--alien-color);
 }
 
-svg .rare {
-    fill: #dba567;
+.rare {
+    background-color: var(--rare-color);
+    fill: var(--rare-color);
 }
 
-svg .gene {
-    fill: #80cd2b;
+.gene {
+    background-color: var(--gene-color);
+    fill: var(--gene-color);
 }
 
-svg .novelty {
-    fill: #80d6f7;
+.novelty {
+    background-color: var(--novelty-color);
+    fill: var(--novelty-color);
 }
 
 svg .empty {
