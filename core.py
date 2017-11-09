@@ -88,7 +88,7 @@ class Player:
         max_str = min_str + tmp['normal'][1]
         result.append(('normal', min_str, max_str))
 
-        tmp = {k: v for k, v in tmp.items() if any(v)}
+        tmp = {k: v for k, v in tmp.items() if any(v) or k == 'normal'}
         for targ in targets:
             if targ in tmp:
                 min_vs_target = tmp['normal'][0] + tmp[targ][0]

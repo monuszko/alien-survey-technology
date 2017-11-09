@@ -100,16 +100,44 @@ def _parse_conditions(line, card):
     card['?_VP'].append((code, int(vp)))
 
 
-def get_card_data():
+# Some cards (like Rebel Resistance) have identical name but differ in function.
+# Such cards never appear in the same expansion, and while it's technically
+# possible to mix ALL of them in, official rules don't allow it.
+# So instead of enabling the use of ALL of them simultaneously and mucking with
+# internal card ID's, this application simply prevents loading
+# (and overwriting) cards from non-matching expansions.
+USED_EXPANSIONS = {
+            # Base game only:
+            '0': {'0'},
+            # Base and The Gathering Storm:
+            '1': {'0', '1'},
+            # Base, TGS and Rebel vs Imperium:
+            '2': {'0', '1', '2'},
+            # Base, TGS, RvI and Brink of War:
+            '3': {'0', '1', '2', '3'},
+            # Base and Alien Artifacts:
+            '4': {'0', '4'},
+            # Base and Xeno Invasion:
+            '5': {'0', '5'},
+            # Base and Rebel vs Imperium:
+            '6': {'0', '6'},
+        }
+
+
+def get_card_data(expansion_code):
     card_data = {}
     with open('cards.txt', 'r') as card_file:
         card = None
         for line in card_file:
             if line.startswith('N:'):
                 card_name = line[2:].strip()
-                card = card_data[card_name] = _get_fresh_card()
+                card = _get_fresh_card()
             elif line.startswith('T:'):
                 _parse_card_header(line, card)
+            elif line.startswith('E@'):
+                card_expansion = line[2]
+                if card_expansion in USED_EXPANSIONS[expansion_code]:
+                    card_data[card_name] = card
             elif line.startswith('G:'):
                 _parse_goods(line, card)
             elif line.startswith('F:'):
@@ -125,7 +153,7 @@ def get_card_data():
     return card_data
 
 
-def get_messages():
+def get_data():
     log = max(f for f in os.listdir('.') if f.startswith('export_'))
     print('Processing {} ...'.format(log))
     messages = []
@@ -135,9 +163,16 @@ def get_messages():
         # which may contain a normal group.
         pattern = r'.*<Message(?: format="(\w+)")?>([^<]*)<\/Message>\n'
         for line in log_file:
+            if '<Expansion id="' in line:
+                expansion_code = line.split('"')[1]
+                continue
             match = re.search(pattern, line)
             if match:
                 fmt, message = match.groups()
                 messages.append((message, fmt))
+    return {
+            'messages': messages,
+            'expansion_code': expansion_code,
+            }
     return messages
 

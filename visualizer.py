@@ -4,14 +4,17 @@ import re
 from collections import OrderedDict, Counter
 
 from core import get_phase_name, Player, Phase, Round, Game
-from load_data import get_card_data, get_messages
+from load_data import get_data, get_card_data
 from render import produce_report
 
 
-CARD_DATA = get_card_data()
-messages = get_messages()
+input_data = get_data()
+messages = input_data['messages']
+CARD_DATA = get_card_data(input_data['expansion_code'])
+
 
 game = Game()
+
 
 msg = messages[0][0]
 while 'Round' not in msg:
