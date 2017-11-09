@@ -138,6 +138,7 @@ class Player:
         return sum(self.question_marks(card, tableau) for card in tableau)
 
     def get_VP_bar(self, phase_nr):
+        phase_nr += 1
         for_cards = self.raw_tableau_VP(phase_nr) * 'c'
         for_tokens = sum(self.vp[:phase_nr]) * 'v'
         for_variable = self.tableau_question_marks(phase_nr) * '?'

@@ -136,7 +136,7 @@ def produce_report(game):
                                     klass = player.get_color()
                                 with tag('td', klass=klass):
                                     render_changes(player.get_changes(phase.nr))
-                render_bar_graph(game.players, phase.nr + 1)
+                render_bar_graph(game.players, phase.nr)
                 vp_taken = 0
                 for player in game.players:
                     vp_taken += len(player.get_VP_bar(phase.nr).strip('c?'))
