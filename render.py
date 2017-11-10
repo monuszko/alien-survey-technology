@@ -115,17 +115,29 @@ def render_bar_graph(players, phase_nr):
                 text(total)
 
 
+
+def render_military_circle(content, klass):
+    with tag('svg', klass="icon"):
+        doc.stag('use', ('xlink:href', '#military'), klass=klass)
+
+        plus = '+' if int(content) >= 0 else ''
+        with tag('text', ('text-anchor', 'middle'), x="9", y="17", fill="red"):
+            text(plus + content)
+
+
 def render_military(player, phase_nr):
     for l in player.get_military(player.get_tableau(phase_nr)):
         target, min_str, max_str = l
+        if target != 'normal':
+            text('/')
         min_str = str(min_str)
         max_str = str(max_str)
-        with tag('span', klass='military ' + target):
-            plus = '+' if int(min_str) >= 0 else ''
-            tmp = '({0}{1})'.format(plus, min_str)
-            if max_str > min_str:
-                tmp = tmp.replace(min_str, min_str + '/' + max_str)
-            text(tmp)
+
+        render_military_circle(min_str, target)
+        if max_str > min_str:
+            text('-')
+            render_military_circle(max_str, target)
+
 
 
 def produce_report(game):

@@ -4,6 +4,7 @@
     --gene-color: #80cd2b;
     --alien-color: #fef200;
     --rebel-color: #de232c;
+    --rebel-color-background: #fbc0a8;
     --imperium-color: #66296e;
     --terraforming-color: #cda373;
     --uplift-color: #8bcc8a;
@@ -55,6 +56,14 @@ ul {
 .blue {
     background-color: #8888aa;
     font-weight: bold;
+}
+
+svg .normal {
+    fill: none;
+}
+
+svg .rebel {
+    fill: var(--rebel-color-background);
 }
 
 svg .alien {
