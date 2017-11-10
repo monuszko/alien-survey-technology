@@ -29,6 +29,7 @@ def render_cells(cells):
                     for row in cell[1]:
                         line('li', row)
 
+
 def as_tokens(points):
     tokens = []
     points = int(points)
@@ -39,6 +40,28 @@ def as_tokens(points):
                 points -= token
                 break
     return tokens
+
+
+def colored(card_name):
+    '''Returns the card name with certain keywords wrapped in a <span>'''
+    keywords = (
+            'Alien',
+            'Uplift',
+            'Rebel',
+            'Terraforming',
+            'Anti-Xeno',
+            'Xeno',
+            'Imperium',
+            )
+
+    present = set()
+    for kw in keywords:
+        if kw in card_name and not any(kw in p for p in present):
+            present.add(kw)
+            card_name = card_name.replace(kw,
+                '<span class="colored {0}">{1}</span>'.format(kw.lower(), kw))
+
+    return card_name
 
 
 def render_changes(changes):
@@ -57,9 +80,11 @@ def render_changes(changes):
                     text_id = '#number-%s' % changes['cards']
                     doc.stag('use', ('xlink:href', text_id), x=23)
         if changes['lost']:
-            line('li', changes['lost'], klass='strike')
+            with tag('li'):
+                doc.asis(colored(changes['lost']))
         if changes['placed']:
-            line('li', changes['placed'])
+            with tag('li'):
+                doc.asis(colored(changes['placed']))
         if changes['points']:
             for token in as_tokens(changes['points']):
                 with tag('svg', klass="icon"):

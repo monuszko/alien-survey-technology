@@ -3,6 +3,10 @@
     --rare-color: #dba567;
     --gene-color: #80cd2b;
     --alien-color: #fef200;
+    --rebel-color: #de232c;
+    --imperium-color: #66296e;
+    --terraforming-color: #cda373;
+    --uplift-color: #8bcc8a;
 }
 
 table {
@@ -53,24 +57,52 @@ ul {
     font-weight: bold;
 }
 
-.alien {
-    background-color: var(--alien-color);
+svg .alien {
     fill: var(--alien-color);
 }
 
-.rare {
-    background-color: var(--rare-color);
+svg .rare {
     fill: var(--rare-color);
 }
 
-.gene {
-    background-color: var(--gene-color);
+svg .gene {
     fill: var(--gene-color);
 }
 
-.novelty {
-    background-color: var(--novelty-color);
+svg .novelty {
     fill: var(--novelty-color);
+}
+
+span.colored {
+    text-shadow: 1px 1px 0px black; 
+    }
+
+span.alien {
+    color: var(--alien-color);
+}
+
+span.uplift {
+    color: var(--uplift-color);
+}
+
+span.terraforming {
+    color: var(--terraforming-color);
+}
+
+span.rebel {
+    color: var(--rebel-color);
+}
+
+span.imperium {
+    color: var(--imperium-color);
+}
+
+span.xeno {
+    color: var(--xeno-color);
+}
+
+span.anti-xeno {
+    color: var(--anti-xeno-color);
 }
 
 svg .empty {
