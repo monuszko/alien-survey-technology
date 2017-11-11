@@ -1,6 +1,9 @@
 Alien Survey Technology
 =======================
 
+.. image:: logo.svg
+   :align: right
+
 Log visualizer for the card game *Race for the Galaxy*.
 Newest version of *AST* always at https://github.com/monuszko/alien-survey-technology
 *Keldon AI* is a free implentation of RftG, and *AST* requires it to run. The game
