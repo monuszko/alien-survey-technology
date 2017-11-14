@@ -62,6 +62,10 @@ svg .normal {
     fill: none;
 }
 
+svg .all {
+    fill: none;
+}
+
 svg .rebel {
     fill: var(--rebel-color-background);
 }

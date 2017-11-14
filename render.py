@@ -139,6 +139,25 @@ def render_military(player, phase_nr):
             render_military_circle(max_str, target)
 
 
+def render_settle_discounts(player, phase_nr):
+    for l in player.get_settle_discounts(player.get_tableau(phase_nr)):
+        reduced, power = l
+        if not power:
+            continue
+        with tag('svg', klass="icon"):
+            doc.stag('use', ('xlink:href', '#settle-discount'), klass=reduced)
+            with tag('text', ('text-anchor', 'middle'), x="9", y="17", fill="black"):
+                text('-{0}'.format(power))
+
+
+def render_settle_bonuses(player, phase_number):
+    with tag('ul'):
+        with tag('li'):
+            render_military(player, phase_number)
+        with tag('li'):
+            render_settle_discounts(player, phase_number)
+
+
 
 def produce_report(game):
     with tag('html'):
@@ -163,7 +182,7 @@ def produce_report(game):
                         line('td', 'phase bonuses')
                         for pl in game.players:
                             with tag('td'):
-                                render_military(pl, rnd.phases[0].nr)
+                                render_settle_bonuses(pl, rnd.phases[0].nr)
                     for phase in rnd.phases:
                         with tag('tr'):
                             line('td', ROMAN[phase.name])

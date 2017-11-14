@@ -1,12 +1,14 @@
 import os, re
-from collections import Counter
 
 
 def _get_fresh_card():
             card = {
-            'military': Counter(),
-            'flags': set(),
-            '?_VP': [],
+                    'III': {
+                        'military': {},
+                        'discount': {},
+                        },
+                'flags': set(),
+                '?_VP': [],
             }
             return card
 
@@ -47,33 +49,42 @@ def _parse_explore_phase(line, card):
 
 
 def _parse_settle_phase(line, card):
-    if 'EXTRA_MILITARY' not in line:
-        return
-    military_targets = (
-        ' NOVELTY',
-        ' RARE',
-        ' GENE',
-        ' ALIEN',
-        ' AGAINST_REBEL',
-        ' XENO',
-        )
-    line = line[4:-3]
-    bonus = int(line.split(':')[1])
-    potential = False
-    if 'CONSUME' in line or 'DISCARD' in line:
-        potential = True
-    for target in military_targets:
-        if target in line:
-            target = target.strip().lower()
-            break
-        target = 'normal'
-    target = target if target != 'against_rebel' else 'rebel'
-    if target not in card['military']:
-        card['military'][target] = [0, 0]
-    if not potential:
-        card['military'][target][0] += bonus
-    else:
-        card['military'][target][1] += bonus
+    if line.startswith('P:3:REDUCE'):
+        power = line.split(':')[3]
+        if ' | ' not in line:
+            reduced = 'all'
+        else:
+            # form:
+            # P:3:REDUCE | ALIEN:2:0
+            match = re.search(r'(NOVELTY|RARE|GENE|ALIEN)', line)
+            reduced = match.group(0).lower()
+        card['III']['discount'][reduced] = int(power)
+    elif 'EXTRA_MILITARY' in line:
+        military_targets = (
+            ' NOVELTY',
+            ' RARE',
+            ' GENE',
+            ' ALIEN',
+            ' AGAINST_REBEL',
+            ' XENO',
+            )
+        line = line[4:-3]
+        bonus = int(line.split(':')[1])
+        potential = False
+        if 'CONSUME' in line or 'DISCARD' in line:
+            potential = True
+        for target in military_targets:
+            if target in line:
+                target = target.strip().lower()
+                break
+            target = 'normal'
+        target = target if target != 'against_rebel' else 'rebel'
+        if target not in card['III']['military']:
+            card['III']['military'][target] = [0, 0]
+        if not potential:
+            card['III']['military'][target][0] += bonus
+        else:
+            card['III']['military'][target][1] += bonus
 
 
 def _parse_consume_phase(line, card):
@@ -174,5 +185,4 @@ def get_data():
             'messages': messages,
             'expansion_code': expansion_code,
             }
-    return messages
 

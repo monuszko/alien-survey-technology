@@ -196,4 +196,8 @@
 <symbol id="military" viewBox="0 0 40 40">
   <circle class="empty" cx="20" cy="20" r="20" stroke="red" stroke-width="3px"/>
 </symbol>
+
+<symbol id="settle-discount" viewBox="0 0 40 40">
+  <circle class="empty" cx="20" cy="20" r="20" stroke="black" stroke-width="3px"/>
+</symbol>
 </svg>

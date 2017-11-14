@@ -80,7 +80,7 @@ class Player:
         tmp['normal'] = [0, 0]
 
         for card in tableau:
-            for target, bonuses in self.card_data[card]['military'].items():
+            for target, bonuses in self.card_data[card]['III']['military'].items():
                 tmp[target][0] += bonuses[0]
                 tmp[target][1] += bonuses[1]
 
@@ -95,6 +95,24 @@ class Player:
                 max_vs_target = min_vs_target + tmp['normal'][1] + tmp[targ][1]
                 result.append((targ, min_vs_target, max_vs_target))
         return result
+
+    def get_settle_discounts(self, tableau):
+        result = []
+        targets = ('rare', 'novelty', 'gene', 'alien')
+        tmp = {reduced: 0 for reduced in targets}
+        tmp['all'] = 0
+        for card in tableau:
+            for reduced, power in self.card_data[card]['III']['discount'].items():
+                tmp[reduced] += power
+
+        result.append(('all', tmp['all']))
+
+        tmp = {k: v for k, v in tmp.items() if v or k == 'all'}
+        for targ in targets:
+            if targ in tmp:
+                result.append((targ, tmp[targ] + tmp['all']))
+        return result
+
 
     def raw_tableau_VP(self, phase_nr):
         '''Return total VP value of tableau without 6-devs'''
