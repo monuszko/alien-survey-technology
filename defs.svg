@@ -123,9 +123,8 @@
 </symbol>
 
 <symbol id="hexagon" viewBox="0 0 300 300">
-  <polygon id="bg"
-           points="300,150 225,280 75,280 0,150 75,20 225,20"
-           fill="navy"/>
+  <polygon points="300,150 225,280 75,280 0,150 75,20 225,20"
+           fill="currentColor"/>
   <polygon class="empty" points="300,150 225,280 75,280 0,150 75,20 225,20" />
 </symbol>
 

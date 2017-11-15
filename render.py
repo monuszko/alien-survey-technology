@@ -33,13 +33,25 @@ def render_cells(cells):
 def as_tokens(points):
     tokens = []
     points = int(points)
+    positive = True if points > 0 else False
+    if not positive:
+        points *= -1
     while points:
         for token in (10, 5, 1):
             if token <= points:
                 tokens.append(token)
                 points -= token
                 break
-    return tokens
+    if positive:
+        return tokens
+    return [token * -1 for token in tokens]
+
+
+def render_token(value):
+    with tag('svg', klass="icon"):
+        symbol_id = 'hexagon-%s' % abs(value)
+        klass = symbol_id if value > 0 else '{0} negative'.format(symbol_id)
+        doc.stag('use', ('xlink:href', '#hexagon'), klass=klass)
 
 
 def colored(card_name):
@@ -87,9 +99,7 @@ def render_changes(changes):
                 doc.asis(colored(changes['placed']))
         if changes['points']:
             for token in as_tokens(changes['points']):
-                with tag('svg', klass="icon"):
-                    symbol_id = 'hexagon-%s' % token
-                    doc.stag('use', ('xlink:href', '#hexagon'), klass=symbol_id)
+                render_token(token)
         if changes['cards'] and not changes['explored']:
             with tag('svg', klass="icon"):
                 doc.stag('use', ('xlink:href', '#card'))
@@ -196,8 +206,9 @@ def produce_report(game):
                 vp_taken = 0
                 for player in game.players:
                     vp_taken += len(player.get_VP_bar(phase.nr).strip('c?'))
-                vp_left = 12 * len(game.players) - vp_taken
-                text('Tokens left: {0}'.format(vp_left))
+                vp_left = as_tokens(12 * len(game.players) - vp_taken)
+                for token in vp_left:
+                    render_token(token)
 
 
     output = open('report.html', 'w')

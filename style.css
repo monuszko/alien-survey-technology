@@ -122,6 +122,14 @@ svg .empty {
     fill: inherit;
 }
 
+use {
+    color: navy;
+}
+
+use.negative {
+    color: red;
+}
+
 use.hexagon-1 {
     fill: url(#one-vp);
 }
